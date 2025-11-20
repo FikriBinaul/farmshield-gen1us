@@ -1,0 +1,429 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+  --primary: #10b981;
+  --secondary: #3b82f6;
+  --accent: #8b5cf6;
+  --leaf-color-1: rgba(139, 195, 74, 0.8);
+  --leaf-color-2: rgba(104, 159, 56, 0.7);
+  --leaf-color-3: rgba(76, 175, 80, 0.6);
+  --leaf-color-4: rgba(205, 220, 57, 0.7);
+  --leaf-color-5: rgba(174, 213, 129, 0.6);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+    --leaf-color-1: rgba(139, 195, 74, 0.6);
+    --leaf-color-2: rgba(104, 159, 56, 0.5);
+    --leaf-color-3: rgba(76, 175, 80, 0.4);
+    --leaf-color-4: rgba(205, 220, 57, 0.5);
+    --leaf-color-5: rgba(174, 213, 129, 0.4);
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+  overflow-x: hidden;
+}
+
+/* ==========================================================================
+   ACCESSIBILITY - MOBILE FRIENDLY
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  
+  .leaf-container {
+    display: none !important;
+  }
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Focus styles - Mobile friendly */
+button:focus-visible,
+a:focus-visible,
+.form-input:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* ==========================================================================
+   DARK MODE ENHANCEMENTS - MOBILE
+   ========================================================================== */
+@media (prefers-color-scheme: dark) {
+  .glass {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(20px);
+  }
+  
+  .shadow-glow {
+    box-shadow: 0 0 30px rgba(59, 130, 246, 0.2);
+  }
+}
+
+/* ==========================================================================
+   LEAF ANIMATION CONTAINER
+   ========================================================================== */
+.leaf-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9999;
+  overflow: hidden;
+}
+
+.leaf {
+  position: absolute;
+  pointer-events: none;
+  opacity: 0;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+/* Leaf shapes using CSS */
+.leaf-type-1 {
+  width: 25px;
+  height: 25px;
+  background: var(--leaf-color-1);
+  border-radius: 50% 0 50% 50%;
+  transform: rotate(45deg);
+}
+
+.leaf-type-2 {
+  width: 20px;
+  height: 30px;
+  background: var(--leaf-color-2);
+  border-radius: 50% 20% 50% 20%;
+  clip-path: polygon(0 0, 100% 0, 80% 100%, 20% 100%);
+}
+
+.leaf-type-3 {
+  width: 28px;
+  height: 28px;
+  background: var(--leaf-color-3);
+  border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+}
+
+.leaf-type-4 {
+  width: 22px;
+  height: 22px;
+  background: var(--leaf-color-4);
+  clip-path: path('M12 4C9 4 6 6 5 9C4 12 6 15 8 17C10 19 13 20 15 19C17 18 19 15 19 12C19 9 16 4 12 4Z');
+}
+
+.leaf-type-5 {
+  width: 18px;
+  height: 24px;
+  background: var(--leaf-color-5);
+  border-radius: 40% 60% 60% 40% / 70% 50% 50% 30%;
+}
+
+/* ==========================================================================
+   COMPLEX LEAF ANIMATIONS
+   ========================================================================== */
+
+/* Fall animation dengan variasi kecepatan */
+@keyframes fall-slow {
+  0% {
+    transform: translateY(-100px) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.8;
+  }
+  90% {
+    opacity: 0.3;
+  }
+  100% {
+    transform: translateY(110vh) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+@keyframes fall-medium {
+  0% {
+    transform: translateY(-150px) rotate(0deg);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.9;
+  }
+  85% {
+    opacity: 0.4;
+  }
+  100% {
+    transform: translateY(120vh) rotate(480deg);
+    opacity: 0;
+  }
+}
+
+@keyframes fall-fast {
+  0% {
+    transform: translateY(-200px) rotate(0deg);
+    opacity: 0;
+  }
+  5% {
+    opacity: 0.7;
+  }
+  95% {
+    opacity: 0.2;
+  }
+  100% {
+    transform: translateY(130vh) rotate(600deg);
+    opacity: 0;
+  }
+}
+
+/* Sway animations dengan variasi pattern */
+@keyframes sway-gentle {
+  0%, 100% { transform: translateX(0) rotate(-5deg); }
+  50% { transform: translateX(25px) rotate(5deg); }
+}
+
+@keyframes sway-medium {
+  0%, 100% { transform: translateX(-10px) rotate(-8deg); }
+  25% { transform: translateX(20px) rotate(4deg); }
+  50% { transform: translateX(35px) rotate(10deg); }
+  75% { transform: translateX(15px) rotate(2deg); }
+}
+
+@keyframes sway-strong {
+  0% { transform: translateX(-30px) rotate(-12deg); }
+  33% { transform: translateX(45px) rotate(8deg); }
+  66% { transform: translateX(-15px) rotate(-4deg); }
+  100% { transform: translateX(-30px) rotate(-12deg); }
+}
+
+/* Floating effect */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+/* Pulsating glow */
+@keyframes pulse-glow {
+  0%, 100% { filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1)); }
+  50% { filter: drop-shadow(0 2px 8px rgba(139, 195, 74, 0.3)); }
+}
+
+/* ==========================================================================
+   INDIVIDUAL LEAF ANIMATIONS
+   ========================================================================== */
+
+.leaf-1 {
+  animation: 
+    fall-slow 25s linear infinite,
+    sway-gentle 8s ease-in-out infinite,
+    pulse-glow 4s ease-in-out infinite;
+  left: 10%;
+}
+
+.leaf-2 {
+  animation: 
+    fall-medium 20s linear infinite,
+    sway-medium 6s ease-in-out infinite,
+    float 5s ease-in-out infinite;
+  left: 25%;
+  animation-delay: 2s;
+}
+
+.leaf-3 {
+  animation: 
+    fall-fast 18s linear infinite,
+    sway-strong 7s ease-in-out infinite,
+    pulse-glow 3s ease-in-out infinite;
+  left: 40%;
+  animation-delay: 5s;
+}
+
+.leaf-4 {
+  animation: 
+    fall-slow 22s linear infinite,
+    sway-gentle 9s ease-in-out infinite,
+    float 6s ease-in-out infinite;
+  left: 60%;
+  animation-delay: 8s;
+}
+
+.leaf-5 {
+  animation: 
+    fall-medium 19s linear infinite,
+    sway-medium 5s ease-in-out infinite;
+  left: 75%;
+  animation-delay: 12s;
+}
+
+.leaf-6 {
+  animation: 
+    fall-fast 16s linear infinite,
+    sway-strong 6s ease-in-out infinite,
+    pulse-glow 5s ease-in-out infinite;
+  left: 90%;
+  animation-delay: 15s;
+}
+
+.leaf-7 {
+  animation: 
+    fall-slow 24s linear infinite,
+    sway-gentle 7s ease-in-out infinite,
+    float 4s ease-in-out infinite;
+  left: 15%;
+  animation-delay: 18s;
+}
+
+.leaf-8 {
+  animation: 
+    fall-medium 21s linear infinite,
+    sway-medium 8s ease-in-out infinite;
+  left: 50%;
+  animation-delay: 22s;
+}
+
+.leaf-9 {
+  animation: 
+    fall-fast 17s linear infinite,
+    sway-strong 5s ease-in-out infinite,
+    pulse-glow 6s ease-in-out infinite;
+  left: 85%;
+  animation-delay: 25s;
+}
+
+.leaf-10 {
+  animation: 
+    fall-slow 26s linear infinite,
+    sway-gentle 10s ease-in-out infinite,
+    float 7s ease-in-out infinite;
+  left: 30%;
+  animation-delay: 28s;
+}
+
+/* ==========================================================================
+   MOBILE OPTIMIZATIONS
+   ========================================================================== */
+@media (max-width: 768px) {
+  .leaf-container {
+    /* Kurangi jumlah daun di mobile untuk performance */
+  }
+  
+  .leaf {
+    /* Perkecil ukuran daun di mobile */
+    transform: scale(0.8);
+  }
+  
+  .leaf-type-1 { width: 20px; height: 20px; }
+  .leaf-type-2 { width: 16px; height: 24px; }
+  .leaf-type-3 { width: 22px; height: 22px; }
+  .leaf-type-4 { width: 18px; height: 18px; }
+  .leaf-type-5 { width: 14px; height: 20px; }
+  
+  /* Perlambat animasi di mobile untuk battery saving */
+  @keyframes fall-slow-mobile {
+    0% { transform: translateY(-50px) rotate(0deg); opacity: 0; }
+    10% { opacity: 0.8; }
+    90% { opacity: 0.3; }
+    100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
+  }
+  
+  /* Override animations untuk mobile */
+  .leaf-1, .leaf-2, .leaf-3, .leaf-4, .leaf-5,
+  .leaf-6, .leaf-7, .leaf-8, .leaf-9, .leaf-10 {
+    animation-duration: 30s, 12s, 8s !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .leaf-container {
+    /* Further optimization untuk device kecil */
+  }
+  
+  .leaf {
+    transform: scale(0.6);
+  }
+}
+
+/* ==========================================================================
+   PERFORMANCE OPTIMIZATIONS
+   ========================================================================== */
+.leaf {
+  /* Hardware acceleration */
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000;
+  will-change: transform, opacity;
+}
+
+/* ==========================================================================
+   INTERACTIVE ELEMENTS
+   ========================================================================== */
+.glass {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+}
+
+.content-card {
+  background: var(--background);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 2rem;
+  margin: 1rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+/* ==========================================================================
+   PRINT STYLES
+   ========================================================================== */
+@media print {
+  .navbar,
+  .mobile-nav,
+  .btn,
+  .leaf-container {
+    display: none !important;
+  }
+  
+  .card {
+    box-shadow: none !important;
+    border: 1px solid #000 !important;
+  }
+  
+  body {
+    background: white !important;
+    color: black !important;
+  }
+}
