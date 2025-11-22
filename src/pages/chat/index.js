@@ -1,15 +1,31 @@
+"use client";
+
 import { useEffect, useState } from "react";
 import { db } from "@/lib/firebase";
 import { useRouter } from "next/router";
-import { collection, getDocs } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  query,
+  where,
+  addDoc,
+  serverTimestamp,
+} from "firebase/firestore";
 import Cookies from "js-cookie";
+
+// Layout
+import AdminLayout from "@/layouts/adminlayout";
+import UserLayout from "@/layouts/userlayout";
 
 export default function ChatList() {
   const router = useRouter();
   const [users, setUsers] = useState([]);
-  const [currentUser, setCurrentUser] = useState(undefined); // undefined = belum cek
+  const [currentUser, setCurrentUser] = useState(undefined);
+  const [loading, setLoading] = useState(true);
 
-  // Ambil data user dari cookie
+  // ============================================================
+  // AMBIL USER DARI COOKIE
+  // ============================================================
   useEffect(() => {
     const raw = Cookies.get("user");
 
@@ -22,62 +38,119 @@ export default function ChatList() {
       const parsed = JSON.parse(raw);
       setCurrentUser(parsed);
     } catch (err) {
-      console.error("Cookie invalid!", err);
+      console.error("Cookie rusak:", err);
       setCurrentUser(null);
     }
   }, []);
 
-  // Redirect kalau belum login
+  // Redirect jika belum login
   useEffect(() => {
     if (currentUser === null) {
       router.push("/login");
     }
   }, [currentUser]);
 
-  // Ambil semua user dari Firestore
+  // ============================================================
+  // LOAD DAFTAR USER DARI FIRESTORE
+  // ============================================================
   useEffect(() => {
-    const fetchUsers = async () => {
+    if (!currentUser) return;
+
+    const loadUsers = async () => {
       try {
         const snap = await getDocs(collection(db, "users"));
         const list = snap.docs.map((d) => ({
           id: d.id,
           ...d.data(),
         }));
+
         setUsers(list);
       } catch (err) {
-        console.error("Gagal mengambil user:", err);
+        console.error("Gagal load users:", err);
+      } finally {
+        setLoading(false);
       }
     };
 
-    fetchUsers();
-  }, []);
+    loadUsers();
+  }, [currentUser]);
 
-  // Saat mengecek login, tampilkan loading
-  if (currentUser === undefined) {
-    return <p>Loading...</p>;
+  // ============================================================
+  // BUKA / BUAT CHAT BERDASARKAN EMAIL
+  // ============================================================
+  const openChat = async (targetEmail) => {
+    const myEmail = currentUser.email;
+
+    // Cek apakah chat sudah ada
+    const q = query(
+      collection(db, "chats"),
+      where("members", "array-contains", myEmail)
+    );
+
+    const snap = await getDocs(q);
+
+    let chatFound = null;
+
+    snap.forEach((doc) => {
+      const data = doc.data();
+      if (data.members.includes(targetEmail)) {
+        chatFound = doc.id;
+      }
+    });
+
+    // Jika sudah ada → redirect
+    if (chatFound) {
+      router.push(`/chat/${chatFound}`);
+      return;
+    }
+
+    // Buat chat baru
+    const newChat = await addDoc(collection(db, "chats"), {
+      members: [myEmail, targetEmail],
+      createdAt: serverTimestamp(),
+    });
+
+    router.push(`/chat/${newChat.id}`);
+  };
+
+  // ============================================================
+  // LOADING
+  // ============================================================
+  if (currentUser === undefined || loading) {
+    return (
+      <div className="flex items-center justify-center h-screen text-gray-600">
+        <div className="animate-spin h-10 w-10 border-4 border-green-500 border-t-transparent rounded-full"></div>
+      </div>
+    );
   }
 
-  // Saat user tidak login, return kosong (redirect berjalan)
-  if (currentUser === null) {
-    return <></>;
-  }
+  if (currentUser === null) return <></>;
 
+  const Layout = currentUser.role === "admin" ? AdminLayout : UserLayout;
+
+  // ============================================================
+  // UI
+  // ============================================================
   return (
-    <div className="p-6">
-      <h1 className="text-xl font-bold mb-4">Daftar User</h1>
+    <Layout>
+      <div className="p-6">
+        <h1 className="text-2xl font-bold mb-6">Daftar User untuk Chat</h1>
 
-      {users
-        .filter((u) => u.email !== currentUser.email)
-        .map((u) => (
-          <a
-            key={u.id}
-            href={`/chat/${u.id}`}
-            className="block p-3 border rounded mb-2 hover:bg-gray-100 transition"
-          >
-            <p className="font-semibold">{u.name}</p>
-            <p className="text-sm text-gray-600">{u.email}</p>
-          </a>
-        ))}
-    </div>
+        <div className="grid gap-4">
+          {users
+            .filter((u) => u.email !== currentUser.email)
+            .map((u) => (
+              <div
+                key={u.email}
+                onClick={() => openChat(u.email)}
+                className="p-4 border rounded-lg shadow bg-white cursor-pointer hover:bg-green-50 hover:border-green-600 transition"
+              >
+                <p className="font-semibold text-lg text-green-800">{u.name}</p>
+                <p className="text-sm text-gray-600">{u.email}</p>
+              </div>
+            ))}
+        </div>
+      </div>
+    </Layout>
   );
 }
