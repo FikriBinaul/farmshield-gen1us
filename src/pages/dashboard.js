@@ -192,7 +192,6 @@ export default function Dashboard() {
     loadUsers();
   }, []);
 
-  if (loading) return <p>Loading...</p>;
 
   return (
     <AdminLayout>

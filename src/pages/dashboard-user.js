@@ -111,7 +111,6 @@ export default function DashboardUser() {
     router.push("/login");
   };
 
-  if (!user || !data) return <p className="p-6 text-center">Loading...</p>;
 
   return (
     <UserLayout>

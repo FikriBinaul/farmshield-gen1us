@@ -13,6 +13,8 @@ import {
 import { db } from "@/lib/firebase";
 import Cookies from "js-cookie";
 
+export const dynamic = "force-dynamic";
+
 export default function ChatRoom() {
   const router = useRouter();
   const { chatId } = useParams();
