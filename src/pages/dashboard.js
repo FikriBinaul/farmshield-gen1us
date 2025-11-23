@@ -26,6 +26,8 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
+export const dynamic = "force-dynamic";
+
 export default function Dashboard() {
   const router = useRouter();
   const [user, setUser] = useState(null);
