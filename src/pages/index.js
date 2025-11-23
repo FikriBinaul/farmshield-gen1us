@@ -12,7 +12,7 @@ const FarmShield3DModel = dynamic(
         <div className="text-gray-500">Loading 3D Model...</div>
       </div>
     )
-  }
+}
 );
 
 export default function Home() {
