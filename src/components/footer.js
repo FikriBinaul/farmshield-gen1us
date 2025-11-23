@@ -1,6 +1,6 @@
 export default function Footer() {
   return (
-    <footer className="bg-green-900 text-gray-200 pt-12 mt-10">
+    <footer className="bg-green-900 dark:bg-gray-900 text-gray-200 dark:text-gray-300 pt-12 mt-10">
       <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-10">
 
         {/* Kolom 1 */}
@@ -36,7 +36,7 @@ export default function Footer() {
       </div>
 
       {/* Garis Pembatas */}
-      <div className="border-t border-green-700 mt-10"></div>
+      <div className="border-t border-green-700 dark:border-gray-700 mt-10"></div>
 
       {/* Footer Bottom */}
       <div className="text-center py-4 text-sm opacity-80">

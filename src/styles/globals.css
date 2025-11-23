@@ -52,7 +52,7 @@ body {
     scroll-behavior: auto !important;
   }
   
-  .leaf-container {
+  .leaf-animation-container {
     display: none !important;
   }
 }
@@ -93,317 +93,279 @@ a:focus-visible,
 }
 
 /* ==========================================================================
-   LEAF ANIMATION CONTAINER
+   LEAF ANIMATION STYLES
    ========================================================================== */
-.leaf-container {
+
+.leaf-animation-container {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
   pointer-events: none;
-  z-index: 9999;
+  z-index: 0;
   overflow: hidden;
 }
 
 .leaf {
   position: absolute;
-  pointer-events: none;
-  opacity: 0;
-  animation-timing-function: ease-in-out;
-  animation-iteration-count: infinite;
+  top: -50px;
+  color: #4a7c59;
+  animation: fall linear infinite;
+  will-change: transform, top;
+}
+
+.leaf svg {
+  width: 100%;
+  height: 100%;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
 }
 
-/* Leaf shapes using CSS */
-.leaf-type-1 {
-  width: 25px;
-  height: 25px;
-  background: var(--leaf-color-1);
-  border-radius: 50% 0 50% 50%;
-  transform: rotate(45deg);
-}
-
-.leaf-type-2 {
-  width: 20px;
-  height: 30px;
-  background: var(--leaf-color-2);
-  border-radius: 50% 20% 50% 20%;
-  clip-path: polygon(0 0, 100% 0, 80% 100%, 20% 100%);
-}
-
-.leaf-type-3 {
-  width: 28px;
-  height: 28px;
-  background: var(--leaf-color-3);
-  border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
-}
-
-.leaf-type-4 {
-  width: 22px;
-  height: 22px;
-  background: var(--leaf-color-4);
-  clip-path: path('M12 4C9 4 6 6 5 9C4 12 6 15 8 17C10 19 13 20 15 19C17 18 19 15 19 12C19 9 16 4 12 4Z');
-}
-
-.leaf-type-5 {
-  width: 18px;
-  height: 24px;
-  background: var(--leaf-color-5);
-  border-radius: 40% 60% 60% 40% / 70% 50% 50% 30%;
-}
-
-/* ==========================================================================
-   COMPLEX LEAF ANIMATIONS
-   ========================================================================== */
-
-/* Fall animation dengan variasi kecepatan */
-@keyframes fall-slow {
+@keyframes fall {
   0% {
-    transform: translateY(-100px) rotate(0deg);
-    opacity: 0;
+    top: -50px;
+    transform: translateX(0) rotate(var(--initial-rotation, 0deg));
   }
-  10% {
-    opacity: 0.8;
+  25% {
+    transform: translateX(calc(var(--sway, 0px) * 0.5)) rotate(calc(var(--initial-rotation, 0deg) + 90deg));
   }
-  90% {
-    opacity: 0.3;
+  50% {
+    transform: translateX(var(--sway, 0px)) rotate(calc(var(--initial-rotation, 0deg) + 180deg));
+  }
+  75% {
+    transform: translateX(calc(var(--sway, 0px) * 0.7)) rotate(calc(var(--initial-rotation, 0deg) + 270deg));
   }
   100% {
-    transform: translateY(110vh) rotate(360deg);
-    opacity: 0;
+    top: 100vh;
+    transform: translateX(calc(var(--sway, 0px) * 0.3)) rotate(calc(var(--initial-rotation, 0deg) + 360deg));
   }
 }
 
-@keyframes fall-medium {
-  0% {
-    transform: translateY(-150px) rotate(0deg);
-    opacity: 0;
-  }
-  15% {
-    opacity: 0.9;
-  }
-  85% {
-    opacity: 0.4;
-  }
-  100% {
-    transform: translateY(120vh) rotate(480deg);
-    opacity: 0;
-  }
+/* Variasi warna daun untuk efek yang lebih natural */
+.leaf:nth-child(3n) {
+  color: #5a8c69;
 }
 
-@keyframes fall-fast {
-  0% {
-    transform: translateY(-200px) rotate(0deg);
-    opacity: 0;
-  }
-  5% {
-    opacity: 0.7;
-  }
-  95% {
-    opacity: 0.2;
-  }
-  100% {
-    transform: translateY(130vh) rotate(600deg);
-    opacity: 0;
-  }
+.leaf:nth-child(3n + 1) {
+  color: #3d6b4d;
 }
 
-/* Sway animations dengan variasi pattern */
-@keyframes sway-gentle {
-  0%, 100% { transform: translateX(0) rotate(-5deg); }
-  50% { transform: translateX(25px) rotate(5deg); }
+.leaf:nth-child(3n + 2) {
+  color: #6b9c7a;
 }
 
-@keyframes sway-medium {
-  0%, 100% { transform: translateX(-10px) rotate(-8deg); }
-  25% { transform: translateX(20px) rotate(4deg); }
-  50% { transform: translateX(35px) rotate(10deg); }
-  75% { transform: translateX(15px) rotate(2deg); }
+/* Dark mode styles untuk daun */
+.dark .leaf {
+  opacity: 0.4;
 }
 
-@keyframes sway-strong {
-  0% { transform: translateX(-30px) rotate(-12deg); }
-  33% { transform: translateX(45px) rotate(8deg); }
-  66% { transform: translateX(-15px) rotate(-4deg); }
-  100% { transform: translateX(-30px) rotate(-12deg); }
+.dark .leaf:nth-child(3n) {
+  color: #7a9c8a;
 }
 
-/* Floating effect */
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-8px); }
+.dark .leaf:nth-child(3n + 1) {
+  color: #5d7b6d;
 }
 
-/* Pulsating glow */
-@keyframes pulse-glow {
-  0%, 100% { filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1)); }
-  50% { filter: drop-shadow(0 2px 8px rgba(139, 195, 74, 0.3)); }
+.dark .leaf:nth-child(3n + 2) {
+  color: #8bac9a;
 }
 
-/* ==========================================================================
-   INDIVIDUAL LEAF ANIMATIONS
-   ========================================================================== */
-
-.leaf-1 {
-  animation: 
-    fall-slow 25s linear infinite,
-    sway-gentle 8s ease-in-out infinite,
-    pulse-glow 4s ease-in-out infinite;
-  left: 10%;
+.dark .leaf svg {
+  filter: drop-shadow(0 2px 4px rgba(255, 255, 255, 0.1));
 }
 
-.leaf-2 {
-  animation: 
-    fall-medium 20s linear infinite,
-    sway-medium 6s ease-in-out infinite,
-    float 5s ease-in-out infinite;
-  left: 25%;
-  animation-delay: 2s;
+/* Efek blur untuk daun yang jauh */
+.leaf:nth-child(n + 10) {
+  filter: blur(1px);
+  opacity: 0.2;
 }
 
-.leaf-3 {
-  animation: 
-    fall-fast 18s linear infinite,
-    sway-strong 7s ease-in-out infinite,
-    pulse-glow 3s ease-in-out infinite;
-  left: 40%;
-  animation-delay: 5s;
-}
-
-.leaf-4 {
-  animation: 
-    fall-slow 22s linear infinite,
-    sway-gentle 9s ease-in-out infinite,
-    float 6s ease-in-out infinite;
-  left: 60%;
-  animation-delay: 8s;
-}
-
-.leaf-5 {
-  animation: 
-    fall-medium 19s linear infinite,
-    sway-medium 5s ease-in-out infinite;
-  left: 75%;
-  animation-delay: 12s;
-}
-
-.leaf-6 {
-  animation: 
-    fall-fast 16s linear infinite,
-    sway-strong 6s ease-in-out infinite,
-    pulse-glow 5s ease-in-out infinite;
-  left: 90%;
-  animation-delay: 15s;
-}
-
-.leaf-7 {
-  animation: 
-    fall-slow 24s linear infinite,
-    sway-gentle 7s ease-in-out infinite,
-    float 4s ease-in-out infinite;
-  left: 15%;
-  animation-delay: 18s;
-}
-
-.leaf-8 {
-  animation: 
-    fall-medium 21s linear infinite,
-    sway-medium 8s ease-in-out infinite;
-  left: 50%;
-  animation-delay: 22s;
-}
-
-.leaf-9 {
-  animation: 
-    fall-fast 17s linear infinite,
-    sway-strong 5s ease-in-out infinite,
-    pulse-glow 6s ease-in-out infinite;
-  left: 85%;
-  animation-delay: 25s;
-}
-
-.leaf-10 {
-  animation: 
-    fall-slow 26s linear infinite,
-    sway-gentle 10s ease-in-out infinite,
-    float 7s ease-in-out infinite;
-  left: 30%;
-  animation-delay: 28s;
-}
-
-/* ==========================================================================
-   MOBILE OPTIMIZATIONS
-   ========================================================================== */
+/* Responsive adjustments */
 @media (max-width: 768px) {
-  .leaf-container {
-    /* Kurangi jumlah daun di mobile untuk performance */
-  }
-  
   .leaf {
-    /* Perkecil ukuran daun di mobile */
-    transform: scale(0.8);
-  }
-  
-  .leaf-type-1 { width: 20px; height: 20px; }
-  .leaf-type-2 { width: 16px; height: 24px; }
-  .leaf-type-3 { width: 22px; height: 22px; }
-  .leaf-type-4 { width: 18px; height: 18px; }
-  .leaf-type-5 { width: 14px; height: 20px; }
-  
-  /* Perlambat animasi di mobile untuk battery saving */
-  @keyframes fall-slow-mobile {
-    0% { transform: translateY(-50px) rotate(0deg); opacity: 0; }
-    10% { opacity: 0.8; }
-    90% { opacity: 0.3; }
-    100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
-  }
-  
-  /* Override animations untuk mobile */
-  .leaf-1, .leaf-2, .leaf-3, .leaf-4, .leaf-5,
-  .leaf-6, .leaf-7, .leaf-8, .leaf-9, .leaf-10 {
-    animation-duration: 30s, 12s, 8s !important;
+    width: 15px !important;
+    height: 15px !important;
   }
 }
 
-@media (max-width: 480px) {
-  .leaf-container {
-    /* Further optimization untuk device kecil */
-  }
-  
-  .leaf {
-    transform: scale(0.6);
-  }
-}
+
 
 /* ==========================================================================
-   PERFORMANCE OPTIMIZATIONS
+   GLASSMORPHISM UTILITY CLASSES
    ========================================================================== */
-.leaf {
-  /* Hardware acceleration */
-  transform: translateZ(0);
-  backface-visibility: hidden;
-  perspective: 1000;
-  will-change: transform, opacity;
-}
 
-/* ==========================================================================
-   INTERACTIVE ELEMENTS
-   ========================================================================== */
+/* Base Glass Effect */
 .glass {
   background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 16px;
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
 }
 
-.content-card {
-  background: var(--background);
+/* Glass Card - Light Mode */
+.glass-card {
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 20px;
+  box-shadow: 
+    0 8px 32px 0 rgba(31, 38, 135, 0.15),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.4);
+  transition: all 0.3s ease;
+}
+
+.glass-card:hover {
+  background: rgba(255, 255, 255, 0.3);
+  box-shadow: 
+    0 12px 40px 0 rgba(31, 38, 135, 0.2),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.5);
+  transform: translateY(-2px);
+}
+
+/* Glass Card - Dark Mode */
+.dark .glass-card {
+  background: rgba(17, 24, 39, 0.4);
   border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 
+    0 8px 32px 0 rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
+}
+
+.dark .glass-card:hover {
+  background: rgba(17, 24, 39, 0.5);
+  box-shadow: 
+    0 12px 40px 0 rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.15);
+}
+
+/* Glass Input */
+.glass-input {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px) saturate(180%);
+  -webkit-backdrop-filter: blur(10px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.glass-input:focus {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(16, 185, 129, 0.5);
+  box-shadow: 
+    0 0 0 3px rgba(16, 185, 129, 0.1),
+    0 4px 16px 0 rgba(31, 38, 135, 0.1);
+  outline: none;
+}
+
+.dark .glass-input {
+  background: rgba(17, 24, 39, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.dark .glass-input:focus {
+  background: rgba(17, 24, 39, 0.4);
+  border-color: rgba(16, 185, 129, 0.4);
+}
+
+/* Glass Button */
+.glass-button {
+  background: rgba(16, 185, 129, 0.2);
+  backdrop-filter: blur(10px) saturate(180%);
+  -webkit-backdrop-filter: blur(10px) saturate(180%);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px 0 rgba(16, 185, 129, 0.2);
+  transition: all 0.3s ease;
+}
+
+.glass-button:hover {
+  background: rgba(16, 185, 129, 0.3);
+  border-color: rgba(16, 185, 129, 0.5);
+  box-shadow: 0 6px 20px 0 rgba(16, 185, 129, 0.3);
+  transform: translateY(-1px);
+}
+
+.glass-button:active {
+  transform: translateY(0);
+}
+
+/* Glass Navbar/Header */
+.glass-navbar {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 4px 16px 0 rgba(31, 38, 135, 0.1);
+}
+
+.dark .glass-navbar {
+  background: rgba(17, 24, 39, 0.3);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.2);
+}
+
+/* Glass Sidebar */
+.glass-sidebar {
+  background: rgba(16, 185, 129, 0.15);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-right: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 4px 0 16px 0 rgba(31, 38, 135, 0.1);
+}
+
+.dark .glass-sidebar {
+  background: rgba(17, 24, 39, 0.4);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 4px 0 16px 0 rgba(0, 0, 0, 0.3);
+}
+
+/* Glass Alert/Message */
+.glass-alert {
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(15px) saturate(180%);
+  -webkit-backdrop-filter: blur(15px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px 0 rgba(31, 38, 135, 0.15);
+}
+
+.dark .glass-alert {
+  background: rgba(17, 24, 39, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Glass Modal/Overlay */
+.glass-overlay {
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* Content Card with Glass Effect */
+.content-card {
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 16px;
   padding: 2rem;
   margin: 1rem;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  box-shadow: 
+    0 8px 32px 0 rgba(31, 38, 135, 0.15),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.3);
+}
+
+.dark .content-card {
+  background: rgba(17, 24, 39, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 
+    0 8px 32px 0 rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
 }
 
 /* ==========================================================================
@@ -413,7 +375,7 @@ a:focus-visible,
   .navbar,
   .mobile-nav,
   .btn,
-  .leaf-container {
+  .leaf-animation-container {
     display: none !important;
   }
   
