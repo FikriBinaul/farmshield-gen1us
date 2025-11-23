@@ -1,12 +1,8 @@
 // Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
+import { initializeApp, getApps } from "firebase/app";
 import { getDatabase } from "firebase/database";
-import { getAnalytics } from "firebase/analytics";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
-
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
 
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
@@ -20,8 +16,13 @@ const firebaseConfig = {
   measurementId: "G-7K8L2HPSJY"
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+// Initialize Firebase (prevent multiple initializations in serverless)
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+
+// Initialize services (safe for serverless)
 export const realtimedb = getDatabase(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
+
+// Analytics should only be initialized in browser environment
+// Moved to _app.js or component level if needed

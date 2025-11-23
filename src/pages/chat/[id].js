@@ -14,20 +14,25 @@ import { db } from "@/lib/firebase";
 import Cookies from "js-cookie";
 
 export const dynamic = "force-dynamic";
+export const dynamicParams = true;
 
 export default function ChatRoom() {
   const router = useRouter();
-  const { chatId } = useParams();
+  const params = useParams();
+  const chatId = params?.chatId || null;
 
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
 
-  const sender = JSON.parse(Cookies.get("user"))?.email;
+  const userCookie = Cookies.get("user");
+  const sender = userCookie ? JSON.parse(userCookie)?.email : null;
 
   // ==============================
   // LOAD MESSAGES REALTIME
   // ==============================
   useEffect(() => {
+    if (!chatId) return;
+
     const msgRef = collection(db, `chats/${chatId}/messages`);
     const q = query(msgRef, orderBy("timestamp", "asc"));
 
@@ -42,7 +47,7 @@ export default function ChatRoom() {
   // SEND MESSAGE
   // ==============================
   const sendMessage = async () => {
-    if (!text.trim()) return;
+    if (!text.trim() || !chatId) return;
 
     await addDoc(collection(db, `chats/${chatId}/messages`), {
       sender,
@@ -52,6 +57,14 @@ export default function ChatRoom() {
 
     setText("");
   };
+
+  if (!chatId) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <p className="text-gray-500">Loading chat...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-screen bg-gray-50">

@@ -121,7 +121,7 @@ export default function DashboardUser() {
         {/* HEADER */}
         <div className="mb-10">
           <h1 className="text-3xl font-bold mb-1">Dashboard Pengguna</h1>
-          <p className="text-gray-600">Selamat datang, {data.name}</p>
+          <p className="text-gray-600">Selamat datang, {data?.name || user?.name || "Pengguna"}</p>
         </div>
 
         {/* QUICK STATS */}

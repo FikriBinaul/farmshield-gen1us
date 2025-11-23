@@ -1,6 +1,5 @@
 import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
-import Cookies from "cookies";
 import { checkRateLimit, getSecurityHeaders, logSecurityEvent, sanitizePath } from "@/lib/security";
 
 export default async function handler(req, res) {
@@ -73,10 +72,8 @@ export default async function handler(req, res) {
 
     // ===== 3. ATUR COOKIE REMEMBER ME (7 hari / 1 hari) =====
     const cookieDuration = remember
-      ? 7 * 24 * 60 * 60 * 1000
-      : 24 * 60 * 60 * 1000;
-
-    const cookies = new Cookies(req, res);
+      ? 7 * 24 * 60 * 60 // 7 days in seconds
+      : 24 * 60 * 60; // 1 day in seconds
 
     // Validasi role
     if (!userData.role || !["admin", "user"].includes(userData.role)) {
@@ -84,27 +81,26 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: "Account configuration error" });
     }
 
-    // Set secure cookie
-    // Note: httpOnly: false untuk kompatibilitas dengan js-cookie di client
-    // Di production, pertimbangkan menggunakan httpOnly: true dan server-side rendering
-    cookies.set(
-      "user",
-      JSON.stringify({
-        id: userData.email,
-        name: userData.name || "",
-        email: userData.email,
-        role: userData.role,
-        loginTime: Date.now(), // Untuk session timeout
-        remember: Boolean(remember), // Simpan preferensi remember me
-      }),
-      {
-        httpOnly: false, // Allow JavaScript access untuk kompatibilitas
-        secure: process.env.NODE_ENV === "production", // HTTPS only in production
-        sameSite: "lax", // Lebih fleksibel dari strict untuk kompatibilitas
-        maxAge: cookieDuration,
-        path: "/",
-      }
-    );
+    // Set secure cookie using Next.js res.setHeader (compatible with Vercel)
+    const cookieValue = JSON.stringify({
+      id: userData.email,
+      name: userData.name || "",
+      email: userData.email,
+      role: userData.role,
+      loginTime: Date.now(), // Untuk session timeout
+      remember: Boolean(remember), // Simpan preferensi remember me
+    });
+
+    const isProduction = process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
+    const cookieOptions = [
+      `user=${encodeURIComponent(cookieValue)}`,
+      `Max-Age=${cookieDuration}`,
+      `Path=/`,
+      `SameSite=Lax`,
+      isProduction ? `Secure` : '',
+    ].filter(Boolean).join('; ');
+
+    res.setHeader('Set-Cookie', cookieOptions);
 
     logSecurityEvent("LOGIN_SUCCESS", { ip, userId: userData.email, role: userData.role }, req);
 
