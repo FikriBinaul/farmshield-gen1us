@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 /**
  * LeafAnimation - Komponen animasi daun jatuh yang elegan untuk background
  * 
- * @param {5} leafCount - Jumlah daun (default: 15)
+ * @param {2} leafCount - Jumlah daun (default: 15)
  * @param {slow} speed - Kecepatan animasi: 'slow', 'normal', 'fast' (default: 'normal')
  * 
  * Contoh penggunaan:
@@ -15,7 +15,7 @@ import React, { useEffect, useState } from 'react';
  *   <YourContent />
  * </div>
  */
-const LeafAnimation = ({ leafCount = 5, speed = 'slow' }) => {
+const LeafAnimation = ({ leafCount = 2, speed = 'slow' }) => {
   const [leaves, setLeaves] = useState([]);
 
   useEffect(() => {
@@ -58,7 +58,7 @@ const LeafAnimation = ({ leafCount = 5, speed = 'slow' }) => {
           }}
         >
           <svg
-          viewBox="0 0 64 64"
+          viewBox="0 0 16 16"
           xmlns="http://www.w3.org/2000/svg"
           fill="none"
         >
