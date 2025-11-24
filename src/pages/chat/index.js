@@ -31,6 +31,7 @@ export default function ChatList() {
 
     if (!raw) {
       setCurrentUser(null);
+      setLoading(false);
       return;
     }
 
@@ -40,6 +41,7 @@ export default function ChatList() {
     } catch (err) {
       console.error("Cookie rusak:", err);
       setCurrentUser(null);
+      setLoading(false);
     }
   }, []);
 
@@ -54,7 +56,13 @@ export default function ChatList() {
   // LOAD DAFTAR USER DARI FIRESTORE
   // ============================================================
   useEffect(() => {
-    if (!currentUser) return;
+    if (!currentUser) {
+      // Jika currentUser null, pastikan loading sudah false
+      if (currentUser === null) {
+        setLoading(false);
+      }
+      return;
+    }
 
     const loadUsers = async () => {
       try {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useRouter } from "next/router";
 import {
   collection,
   addDoc,
@@ -13,13 +13,10 @@ import {
 import { db } from "@/lib/firebase";
 import Cookies from "js-cookie";
 
-export const dynamic = "force-dynamic";
-export const dynamicParams = true;
 
 export default function ChatRoom() {
   const router = useRouter();
-  const params = useParams();
-  const chatId = params?.chatId || null;
+  const chatId = router.query.id || null;
 
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
@@ -31,7 +28,7 @@ export default function ChatRoom() {
   // LOAD MESSAGES REALTIME
   // ==============================
   useEffect(() => {
-    if (!chatId) return;
+    if (!router.isReady || !chatId) return;
 
     const msgRef = collection(db, `chats/${chatId}/messages`);
     const q = query(msgRef, orderBy("timestamp", "asc"));
@@ -41,7 +38,7 @@ export default function ChatRoom() {
     });
 
     return () => unsub();
-  }, [chatId]);
+  }, [router.isReady, chatId]);
 
   // ==============================
   // SEND MESSAGE
@@ -58,7 +55,7 @@ export default function ChatRoom() {
     setText("");
   };
 
-  if (!chatId) {
+  if (!router.isReady || !chatId) {
     return (
       <div className="flex items-center justify-center h-screen">
         <p className="text-gray-500">Loading chat...</p>
