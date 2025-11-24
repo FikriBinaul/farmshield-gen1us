@@ -3,8 +3,8 @@ import React, { useEffect, useState } from 'react';
 /**
  * LeafAnimation - Komponen animasi daun jatuh yang elegan untuk background
  * 
- * @param {number} leafCount - Jumlah daun (default: 15)
- * @param {string} speed - Kecepatan animasi: 'slow', 'normal', 'fast' (default: 'normal')
+ * @param {5} leafCount - Jumlah daun (default: 15)
+ * @param {slow} speed - Kecepatan animasi: 'slow', 'normal', 'fast' (default: 'normal')
  * 
  * Contoh penggunaan:
  * <LeafAnimation leafCount={20} speed="normal" />
@@ -15,7 +15,7 @@ import React, { useEffect, useState } from 'react';
  *   <YourContent />
  * </div>
  */
-const LeafAnimation = ({ leafCount = 15, speed = 'normal' }) => {
+const LeafAnimation = ({ leafCount = 5, speed = 'slow' }) => {
   const [leaves, setLeaves] = useState([]);
 
   useEffect(() => {
@@ -58,15 +58,33 @@ const LeafAnimation = ({ leafCount = 15, speed = 'normal' }) => {
           }}
         >
           <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              d="M12 2C8 2 5 5 5 9c0 2.5 1.5 4.5 3.5 5.5C7 15.5 6 17 6 19c0 1.5 1 2.5 2.5 2.5 1 0 1.8-0.5 2.3-1.2C11.2 21 11.6 21 12 21s0.8 0 1.2-0.7c0.5 0.7 1.3 1.2 2.3 1.2 1.5 0 2.5-1 2.5-2.5 0-2-1-3.5-2.5-4.5 2-1 3.5-3 3.5-5.5 0-4-3-7-7-7z"
-              fill="currentColor"
-            />
-          </svg>
+          viewBox="0 0 64 64"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+        >
+          <path
+            d="
+              M32 2
+              C18 10 6 26 10 40
+              C14 54 28 62 32 62
+              C36 62 50 54 54 40
+              C58 26 46 10 32 2
+              Z
+            "
+            fill="currentColor"
+          />
+          <path
+            d="
+              M32 10
+              C28 22 28 42 32 54
+            "
+            stroke="white"
+            strokeWidth="2"
+            strokeLinecap="round"
+            opacity="0.4"
+          />
+        </svg>
+
         </div>
       ))}
     </div>
