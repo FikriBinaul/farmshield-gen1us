@@ -1,6 +1,7 @@
 "use client";
 
 <<<<<<< Updated upstream
+<<<<<<< HEAD
 import { Suspense } from "react";
 import { Canvas, useLoader } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
@@ -10,6 +11,17 @@ import { Canvas, useLoader } from "@react-three/fiber";
 import { OrbitControls, Center } from "@react-three/drei";
 import { STLLoader } from "three/examples/jsm/loaders/STLLoader";
 import { useMemo } from "react";
+=======
+import { Canvas } from "@react-three/fiber";
+import { OrbitControls } from "@react-three/drei";
+import { STLLoader } from "three/examples/jsm/loaders/STLLoader";
+import { useLoader } from "@react-three/fiber";
+=======
+import { Suspense } from "react";
+import { Canvas, useLoader } from "@react-three/fiber";
+import { OrbitControls } from "@react-three/drei";
+import { STLLoader } from "three/examples/jsm/loaders/STLLoader";
+>>>>>>> update
 >>>>>>> Stashed changes
 
 function FarmShieldModel() {
@@ -38,6 +50,7 @@ export default function FarmShield3DModel() {
     <div className="w-full h-full">
 <<<<<<< Updated upstream
       <Canvas camera={{ position: [0, 0, 5], fov: 75 }}>
+<<<<<<< HEAD
         <Suspense fallback={null}>
           <FarmShieldModel />
           <OrbitControls
@@ -78,6 +91,32 @@ export default function FarmShield3DModel() {
           maxPolarAngle={Math.PI * 0.55}
           makeDefault
         />
+=======
+<<<<<<< Updated upstream
+        <FarmShieldModel />
+        <OrbitControls 
+          enableZoom={true}
+          autoRotate 
+          autoRotateSpeed={0.15}
+          minDistance={2}
+          maxDistance={10}
+          enablePan={true}
+          makeDefault
+        />
+=======
+        <Suspense fallback={null}>
+          <FarmShieldModel />
+          <OrbitControls
+            enableZoom={true}
+            autoRotate
+            autoRotateSpeed={0.15}
+            minDistance={2}
+            maxDistance={10}
+            enablePan={true}
+            makeDefault
+          />
+        </Suspense>
+>>>>>>> update
 >>>>>>> Stashed changes
       </Canvas>
     </div>
