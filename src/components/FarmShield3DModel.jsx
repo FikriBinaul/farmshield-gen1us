@@ -24,8 +24,8 @@ function FarmShieldModel() {
   return (
       <mesh
         geometry={geometry}
-        scale={5}
-        rotation={[Math.PI, 0, 0]}
+        scale={[5, -3, 3]}
+        rotation={[0, Math.PI, 0]} // membalik arah agar menghadap depan
       >
       <meshStandardMaterial
         color="#4CAF50"
