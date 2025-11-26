@@ -24,7 +24,7 @@ function FarmShieldModel() {
   return (
       <mesh
         geometry={geometry}
-        scale={10}
+        scale={8}
         rotation={[Math.PI / 2, Math.PI, Math.PI]}
         position={[0, -8, 0]}
       >
