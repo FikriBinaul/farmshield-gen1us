@@ -32,14 +32,14 @@ function FloatingHologramModel() {
 
     // Slow rotation
     meshRef.current.rotation.z = Math.PI + Math.sin(time * 0.3) * 0.1;
-    meshRef.current.rotation.y += 0.002;
+    meshRef.current.rotation.y += 0.02;
   });
 
   return (
     <mesh
       ref={meshRef}
       geometry={geometry}
-      scale={7}
+      scale={5}
       rotation={[Math.PI / 2, Math.PI, Math.PI]}
       position={[0, -8, 0]}
     >
