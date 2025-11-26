@@ -31,32 +31,36 @@ function FarmShieldModel() {
   });
 
   return (
-    <mesh
-      ref={meshRef}
-      geometry={geometry}
-      scale={8}
-      rotation={[Math.PI / 2, Math.PI, Math.PI]}
-      position={[0, -8, 0]}
-    >
-      {/* MATERIAL UTAMA */}
-      <meshStandardMaterial
-        color="#4CAF50"
-        metalness={0.6}
-        roughness={0.3}
-        emissive="#3AFF3A"
-        emissiveIntensity={0.8}
-      />
+     <mesh
+        ref={meshRef}
+        geometry={geometry}
+        scale={8}
+        rotation={[Math.PI / 2, Math.PI, Math.PI]}
+        position={[0, -8, 0]}
+      >
+        <meshStandardMaterial
+          color="#4CAF50"
+          metalness={0.6}
+          roughness={0.3}
+          emissive="#3AFF3A"
+          emissiveIntensity={1}
+        />
+      </mesh>
 
-      {/* GLOW LAYER */}
-      <mesh>
-        <primitive object={geometry} attach="geometry" />
+      {/* GLOW HALO */}
+      <mesh
+        geometry={geometry}
+        scale={8.3}
+        rotation={[Math.PI / 2, Math.PI, Math.PI]}
+        position={[0, -8, 0]}
+      >
         <meshBasicMaterial
           color="#66FF66"
           transparent
-          opacity={0.25}
+          opacity={0.15}
           side={THREE.BackSide}
         />
       </mesh>
-    </mesh>
+    </>
   );
 }
