@@ -46,8 +46,6 @@ function FarmShieldModel() {
           emissiveIntensity={1}
         />
       </mesh>
-
-      {/* GLOW HALO */}
       <mesh
         geometry={geometry}
         scale={8.3}
