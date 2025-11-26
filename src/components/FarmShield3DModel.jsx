@@ -1,17 +1,15 @@
-"use client";
-
-import { Canvas, useFrame, useLoader } from "@react-three/fiber";
-import { EffectComposer, Bloom } from "@react-three/postprocessing";
+import { useRef } from "react";
+import { useFrame, useLoader } from "@react-three/fiber";
 import { OrbitControls, useProgress, Html } from "@react-three/drei";
 import { STLLoader } from "three/examples/jsm/loaders/STLLoader";
-import { Suspense, useRef } from "react";
+import { Suspense } from "react";
 import * as THREE from "three";
 
 function Loader() {
   const { progress } = useProgress();
   return (
     <Html center>
-      <div className="text-cyan-400 font-semibold animate-pulse">
+      <div className="text-green-700 font-semibold">
         {progress.toFixed(0)}% Loading...
       </div>
     </Html>
@@ -21,90 +19,44 @@ function Loader() {
 function FarmShieldModel() {
   const geometry = useLoader(STLLoader, "/models/farmshield.stl");
   const meshRef = useRef();
-  const glowRef = useRef();
 
-  useFrame((state) => {
-    const t = state.clock.getElapsedTime();
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
 
-    // Floating animation
-    if (meshRef.current) {
-      meshRef.current.position.y = -6 + Math.sin(t) * 0.6;
-      meshRef.current.rotation.y += 0.003;
-    }
+    // FLOATING EFFECT
+    meshRef.current.position.y = Math.sin(t) * 0.5 - 8;
 
-    // Glow pulse effect
-    if (glowRef.current) {
-      glowRef.current.material.opacity = 0.4 + Math.sin(t * 3) * 0.2;
-    }
+    // ROTASI HALUS
+    meshRef.current.rotation.z = Math.sin(t * 0.5) * 0.2;
   });
 
   return (
-    <group>
-      {/* Main Hologram Model */}
-      <mesh
-        ref={meshRef}
-        geometry={geometry}
-        scale={8}
-        rotation={[Math.PI / 2, Math.PI, Math.PI]}
-      >
-        <meshStandardMaterial
-          color="#00ffff"
-          emissive="#00ffff"
-          emissiveIntensity={1.5}
-          transparent
-          opacity={0.85}
-          metalness={0.3}
-          roughness={0.1}
-        />
-      </mesh>
+    <mesh
+      ref={meshRef}
+      geometry={geometry}
+      scale={8}
+      rotation={[Math.PI / 2, Math.PI, Math.PI]}
+      position={[0, -8, 0]}
+    >
+      {/* MATERIAL UTAMA */}
+      <meshStandardMaterial
+        color="#4CAF50"
+        metalness={0.6}
+        roughness={0.3}
+        emissive="#3AFF3A"
+        emissiveIntensity={0.8}
+      />
 
-      {/* Glow Aura (tanpa postprocessing) */}
-      <mesh
-        ref={glowRef}
-        geometry={geometry}
-        scale={8.4}
-        rotation={[Math.PI / 2, Math.PI, Math.PI]}
-      >
+      {/* GLOW LAYER */}
+      <mesh>
+        <primitive object={geometry} attach="geometry" />
         <meshBasicMaterial
-          color="#00ffff"
+          color="#66FF66"
           transparent
-          opacity={0.3}
+          opacity={0.25}
           side={THREE.BackSide}
         />
       </mesh>
-    </group>
-  );
-}
-
-export default function FarmShield3DModel() {
-  return (
-    <div className="w-full h-full">
-      <Canvas camera={{ position: [0, 0, 10], fov: 60 }}>
-        <ambientLight intensity={0.4} />
-        <pointLight position={[5, 5, 5]} color="#00ffff" intensity={2} />
-        <pointLight position={[-5, -5, -5]} color="#00ffff" intensity={1} />
-
-        <Suspense fallback={<Loader />}>
-          <FarmShieldModel />
-        </Suspense>
-
-        <OrbitControls
-          enableZoom={false}
-          autoRotate
-          autoRotateSpeed={0.7}
-          enablePan={false}
-        />
-              {/* ================= OPTIONAL BLOOM GLOW (POSTPROCESSING) ================= */}
-        <EffectComposer>
-          <Bloom
-            intensity={1.5}
-            luminanceThreshold={0}
-            luminanceSmoothing={0.9}
-          />
-        </EffectComposer>
-
-
-      </Canvas>
-    </div>
+    </mesh>
   );
 }
