@@ -20,7 +20,7 @@ function FarmShieldModel() {
   const geometry = useLoader(STLLoader, "/models/farmshield.stl");
 
   return (
-    <mesh geometry={geometry} scale={3} rotation={[0, Math.PI, 0]}>
+    <mesh geometry={geometry} scale={3}>
       <meshStandardMaterial color="#4CAF50" metalness={0.5} roughness={0.5} />
     </mesh>
   );
@@ -29,7 +29,7 @@ function FarmShieldModel() {
 export default function FarmShield3DModel() {
   return (
     <div className="w-full h-full">
-      <Canvas camera={{ position: [0, 0, 5], fov: 75 }}>
+      <Canvas camera={{ position: [0, 3, 8], fov: 75 }}>
         <ambientLight intensity={0.5} />
         <directionalLight position={[10, 10, 5]} intensity={1} />
         <directionalLight position={[-10, -10, -5]} intensity={0.5} />
@@ -39,6 +39,7 @@ export default function FarmShield3DModel() {
         </Suspense>
 
         <OrbitControls
+          target={[0, 0, 0]}
           enableZoom
           autoRotate
           autoRotateSpeed={0.15}
