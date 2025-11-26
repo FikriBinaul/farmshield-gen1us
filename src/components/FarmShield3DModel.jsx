@@ -24,8 +24,8 @@ function FarmShieldModel() {
   return (
     <mesh
       geometry={geometry}
-      scale={3}
-      rotation={[-Math.PI / 2, Math.PI, 0]} // standar agar tegak & menghadap depan
+      scale={4}
+      rotation={[-Math.PI / 2, Math.PI, Math.PI]} // standar agar tegak & menghadap depan
     >
       <meshStandardMaterial
         color="#4CAF50"
