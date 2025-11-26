@@ -1,93 +1,97 @@
 "use client";
 
 import { Canvas, useFrame, useLoader } from "@react-three/fiber";
-import { OrbitControls, Html, useProgress } from "@react-three/drei";
+import { OrbitControls, useProgress, Html } from "@react-three/drei";
 import { STLLoader } from "three/examples/jsm/loaders/STLLoader";
 import { Suspense, useRef } from "react";
 import * as THREE from "three";
-import { EffectComposer, Bloom } from "@react-three/postprocessing";
 
 function Loader() {
   const { progress } = useProgress();
   return (
     <Html center>
-      <div className="text-green-400 font-semibold text-lg animate-pulse">
+      <div className="text-cyan-400 font-semibold animate-pulse">
         {progress.toFixed(0)}% Loading...
       </div>
     </Html>
   );
 }
 
-function FloatingHologramModel() {
+function FarmShieldModel() {
   const geometry = useLoader(STLLoader, "/models/farmshield.stl");
   const meshRef = useRef();
+  const glowRef = useRef();
 
   useFrame((state) => {
-    if (!meshRef.current) return;
+    const t = state.clock.getElapsedTime();
 
-    const time = state.clock.getElapsedTime();
+    // Floating animation
+    if (meshRef.current) {
+      meshRef.current.position.y = -6 + Math.sin(t) * 0.6;
+      meshRef.current.rotation.y += 0.003;
+    }
 
-    // Floating up down
-    meshRef.current.position.y = -8 + Math.sin(time) * 0.6;
-
-    // Slow rotation
-    meshRef.current.rotation.z = Math.PI + Math.sin(time * 0.3) * 0.1;
-    meshRef.current.rotation.y += 0.02;
+    // Glow pulse effect
+    if (glowRef.current) {
+      glowRef.current.material.opacity = 0.4 + Math.sin(t * 3) * 0.2;
+    }
   });
 
   return (
-    <mesh
-      ref={meshRef}
-      geometry={geometry}
-      scale={5}
-      rotation={[Math.PI / 2, Math.PI, Math.PI]}
-      position={[0, -8, 0]}
-    >
-      <meshStandardMaterial
-        color="#00ffcc"
-        emissive="#00ffcc"
-        emissiveIntensity={1.8}
-        metalness={0.9}
-        roughness={0.15}
-        transparent
-        opacity={0.85}
-      />
-    </mesh>
+    <group>
+      {/* Main Hologram Model */}
+      <mesh
+        ref={meshRef}
+        geometry={geometry}
+        scale={8}
+        rotation={[Math.PI / 2, Math.PI, Math.PI]}
+      >
+        <meshStandardMaterial
+          color="#00ffff"
+          emissive="#00ffff"
+          emissiveIntensity={1.5}
+          transparent
+          opacity={0.85}
+          metalness={0.3}
+          roughness={0.1}
+        />
+      </mesh>
+
+      {/* Glow Aura (tanpa postprocessing) */}
+      <mesh
+        ref={glowRef}
+        geometry={geometry}
+        scale={8.4}
+        rotation={[Math.PI / 2, Math.PI, Math.PI]}
+      >
+        <meshBasicMaterial
+          color="#00ffff"
+          transparent
+          opacity={0.3}
+          side={THREE.BackSide}
+        />
+      </mesh>
+    </group>
   );
 }
 
-export default function FarmShield3DHologram() {
+export default function FarmShield3DModel() {
   return (
-    <div className="w-full h-full bg-black">
-      <Canvas camera={{ position: [0, 0, 10], fov: 70 }}>
-        {/* Lighting */}
-        <ambientLight intensity={0.2} />
-        <pointLight position={[5, 5, 5]} intensity={2} color="#00fff0" />
-        <pointLight position={[-5, -5, -5]} intensity={1} color="#00aaff" />
+    <div className="w-full h-full">
+      <Canvas camera={{ position: [0, 0, 10], fov: 60 }}>
+        <ambientLight intensity={0.4} />
+        <pointLight position={[5, 5, 5]} color="#00ffff" intensity={2} />
+        <pointLight position={[-5, -5, -5]} color="#00ffff" intensity={1} />
 
         <Suspense fallback={<Loader />}>
-          <FloatingHologramModel />
+          <FarmShieldModel />
         </Suspense>
 
-        {/* Bloom Glow Effect */}
-        <EffectComposer>
-          <Bloom
-            intensity={2.5}
-            luminanceThreshold={0}
-            luminanceSmoothing={0.9}
-          />
-        </EffectComposer>
-
-        {/* Smooth floating camera control */}
         <OrbitControls
+          enableZoom={false}
           autoRotate
-          autoRotateSpeed={0.4}
-          enableZoom
-          enablePan
-          minDistance={2}
-          maxDistance={15}
-          minPolarAngle={Math.PI / 2.2}
-          maxPolarAngle={Math.PI / 2.2}
+          autoRotateSpeed={0.7}
+          enablePan={false}
         />
       </Canvas>
     </div>
