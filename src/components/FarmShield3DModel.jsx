@@ -3,10 +3,9 @@
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, useProgress, Html } from "@react-three/drei";
 import { STLLoader } from "three/examples/jsm/loaders/STLLoader";
-import { useLoader, Suspense, useMemo } from "react";
-import * as THREE from "three";
+import { useLoader, Suspense } from "react";
 
-// Loader fallback saat STL di-load
+// Loader fallback component
 function Loader() {
   const { progress } = useProgress();
   return (
@@ -16,52 +15,33 @@ function Loader() {
   );
 }
 
-// STL Model component
+// Component untuk STL Model
 function FarmShieldModel() {
   const geometry = useLoader(STLLoader, "/models/farmshield.stl");
 
-  // Hitung bounding box untuk skala dan posisi otomatis
-  const { scale, position } = useMemo(() => {
-    geometry.computeBoundingBox();
-    const bbox = geometry.boundingBox;
-    const size = new THREE.Vector3();
-    bbox.getSize(size);
-
-    const maxDim = Math.max(size.x, size.y, size.z);
-    const scale = 2 / maxDim; // Skala otomatis agar model terlihat
-
-    const center = new THREE.Vector3();
-    bbox.getCenter(center);
-
-    return {
-      scale,
-      position: [-center.x * scale, -center.y * scale, -center.z * scale],
-    };
-  }, [geometry]);
-
   return (
-    <mesh geometry={geometry} scale={scale} position={position} rotation={[0, Math.PI, 0]}>
+    <mesh geometry={geometry} scale={0.1} rotation={[0, Math.PI, 0]}>
       <meshStandardMaterial color="#4CAF50" metalness={0.5} roughness={0.5} />
     </mesh>
   );
 }
 
-// Main 3D component
+// Main 3D Model component
 export default function FarmShield3DModel() {
   return (
     <div className="w-full h-full">
       <Canvas camera={{ position: [0, 0, 5], fov: 75 }}>
-        {/* Lampu */}
+        {/* Cahaya */}
         <ambientLight intensity={0.5} />
         <directionalLight position={[10, 10, 5]} intensity={1} />
         <directionalLight position={[-10, -10, -5]} intensity={0.5} />
 
-        {/* STL model dengan Suspense */}
+        {/* Suspense untuk loader */}
         <Suspense fallback={<Loader />}>
           <FarmShieldModel />
         </Suspense>
 
-        {/* OrbitControls */}
+        {/* Orbit controls */}
         <OrbitControls
           enableZoom={true}
           autoRotate
