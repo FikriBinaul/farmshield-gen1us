@@ -22,10 +22,10 @@ function FarmShieldModel() {
   const geometry = useLoader(STLLoader, "/models/farmshield.stl");
 
   return (
-    <mesh
+      <mesh
         geometry={geometry}
         scale={3}
-        rotation={[Math.PI / 2, Math.PI, 0]}
+        rotation={[Math.PI / 2, 0, 0]}
       >
       <meshStandardMaterial
         color="#4CAF50"
