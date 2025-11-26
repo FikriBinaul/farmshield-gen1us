@@ -1,6 +1,7 @@
 "use client";
 
 import { Canvas, useFrame, useLoader } from "@react-three/fiber";
+import { EffectComposer, Bloom } from "@react-three/postprocessing";
 import { OrbitControls, useProgress, Html } from "@react-three/drei";
 import { STLLoader } from "three/examples/jsm/loaders/STLLoader";
 import { Suspense, useRef } from "react";
@@ -93,6 +94,16 @@ export default function FarmShield3DModel() {
           autoRotateSpeed={0.7}
           enablePan={false}
         />
+              {/* ================= OPTIONAL BLOOM GLOW (POSTPROCESSING) ================= */}
+        <EffectComposer>
+          <Bloom
+            intensity={1.5}
+            luminanceThreshold={0}
+            luminanceSmoothing={0.9}
+          />
+        </EffectComposer>
+
+
       </Canvas>
     </div>
   );
