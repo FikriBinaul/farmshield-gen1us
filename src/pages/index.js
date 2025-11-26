@@ -21,58 +21,78 @@ export default function Home() {
   return (
     <div className="bg-gray-50 text-gray-800">
 
-      {/* ======================= HERO SECTION ======================= */}
-      <section className="min-h-screen flex items-center justify-between px-8 md:px-16 bg-gradient-to-br from-green-700 to-green-900 text-white">
-
-        {/* LEFT TEXT */}
-        <div className="max-w-3xl space-y-6 animate-fade-up">
-          <h1 className="text-5xl md:text-6xl font-extrabold leading-tight drop-shadow-lg">
-            FarmShield: Deteksi Kutu Putih Real-Time Berbasis Machine Learning
-          </h1>
-
-          <p className="text-lg opacity-90">
-            Solusi cerdas untuk melindungi tanaman hortikultura Anda dari serangan hama kutu putih —
-            deteksi langsung dari kamera perangkat tanpa perlu unggah foto.
-          </p>
-
-          <p className="italic opacity-80">
-            “Teknologi pertanian berbasis AI untuk petani modern Indonesia.”
-          </p>
-
-          <div className="flex gap-4 mt-6">
-            <button
-              onClick={() => router.push("/deteksi")}
-              className="bg-white text-green-800 font-semibold px-6 py-3 rounded-xl shadow-lg hover:bg-gray-100 hover:scale-105 transition"
-            >
-              Mulai Deteksi Sekarang
-            </button>
-
-            <button
-              onClick={() => router.push("/login")}
-              className="bg-green-600 px-6 py-3 rounded-xl shadow-lg hover:bg-green-700 transition"
-            >
-              Masuk ke Dashboard
-            </button>
-          </div>
-        </div>
-
-        {/* RIGHT 3D MODEL */}
-        <div className="hidden md:block w-[450px] h-[450px]">
-          <FarmShield3DModel />
-        </div>
-
-      </section>
-
-      {/* ======================= SECTION 2: APA ITU FARMSHIELD ======================= */}
-      <section className="py-20 px-8 md:px-20">
-        <h2 className="text-4xl font-bold mb-6 text-green-800">Apa itu FarmShield?</h2>
-        <p className="text-lg max-w-3xl leading-relaxed">
-          FarmShield adalah sistem berbasis web yang memanfaatkan kamera perangkat dan model machine
-          learning untuk mendeteksi kutu putih secara real-time pada tanaman seperti tomat, cabai, dan
-          singkong. Sistem ini menyediakan dashboard monitoring, forum petani, radio edukasi, dan
-          ensiklopedia pertanian sebagai pusat informasi terpadu.
+    {/* ======================= HERO SECTION (VIDEO + OVERLAY) ======================= */}
+    <section className="relative min-h-screen flex items-center justify-between px-8 md:px-16 text-white overflow-hidden">
+    
+      {/* VIDEO BACKGROUND */}
+      <video
+        className="absolute inset-0 w-full h-full object-cover"
+        src="/videos/farm-bg.mkv"
+        autoPlay
+        muted
+        loop
+        playsInline
+      />
+    
+      {/* OVERLAY HIJAU */}
+      <div className="absolute inset-0 bg-gradient-to-br from-green-700 to-green-900 opacity-80"></div>
+    
+      {/* CONTENT HERO */}
+      <div className="relative z-10 max-w-3xl space-y-6 animate-fade-up">
+        <h1 className="text-5xl md:text-6xl font-extrabold leading-tight drop-shadow-lg">
+          FarmShield: Deteksi Kutu Putih Real-Time Berbasis Machine Learning
+        </h1>
+    
+        <p className="text-lg opacity-90">
+          Solusi cerdas untuk melindungi tanaman hortikultura Anda dari serangan hama kutu putih —
+          deteksi langsung dari kamera perangkat tanpa perlu unggah foto.
         </p>
+    
+        <p className="italic opacity-80">
+          “Teknologi pertanian berbasis AI untuk petani modern Indonesia.”
+        </p>
+    
+        <div className="flex gap-4 mt-6">
+          <button
+            onClick={() => router.push("/login")}
+            className="bg-white text-green-800 font-semibold px-6 py-3 rounded-xl shadow-lg hover:bg-gray-100 hover:scale-105 transition"
+          >
+            Mulai Deteksi Sekarang
+          </button>
+    
+          <button
+            onClick={() => router.push("/login")}
+            className="bg-green-600 px-6 py-3 rounded-xl shadow-lg hover:bg-green-700 transition"
+          >
+            Masuk ke Dashboard
+          </button>
+        </div>
+      </div>
+    </section>
+
+
+      {/* ======================= SECTION 2: APA ITU FARMSHIELD + 3D ======================= */}
+      <section className="py-20 px-8 md:px-20">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-12">
+      
+          {/* TEXT */}
+          <div className="max-w-3xl">
+            <h2 className="text-4xl font-bold mb-6 text-green-800">Apa itu FarmShield?</h2>
+            <p className="text-lg leading-relaxed">
+              FarmShield adalah sistem berbasis web yang memanfaatkan kamera perangkat dan model machine
+              learning untuk mendeteksi kutu putih secara real-time pada tanaman tomat. Sistem ini menyediakan dashboard monitoring, forum petani, radio edukasi, dan
+              ensiklopedia pertanian sebagai pusat informasi terpadu.
+            </p>
+          </div>
+      
+          {/* 3D MODEL */}
+          <div className="w-[400px] h-[400px]">
+            <FarmShield3DModel />
+          </div>
+      
+        </div>
       </section>
+
 
       {/* ======================= SECTION 3: FITUR UTAMA ======================= */}
       <section className="py-20 bg-white px-8 md:px-20">
