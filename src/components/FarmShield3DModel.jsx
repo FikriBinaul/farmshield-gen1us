@@ -23,10 +23,10 @@ function FarmShieldModel() {
 
   return (
     <mesh
-      geometry={geometry}
-      scale={4}
-      rotation={[-Math.PI / 2, Math.PI, Math.PI]} // standar agar tegak & menghadap depan
-    >
+        geometry={geometry}
+        scale={3}
+        rotation={[Math.PI / 2, Math.PI, 0]}
+      >
       <meshStandardMaterial
         color="#4CAF50"
         metalness={0.5}
@@ -57,6 +57,8 @@ export default function FarmShield3DModel() {
           maxDistance={10}
           enablePan
           makeDefault
+          minPolarAngle={Math.PI / 2}
+          maxPolarAngle={Math.PI / 2}
         />
       </Canvas>
     </div>
