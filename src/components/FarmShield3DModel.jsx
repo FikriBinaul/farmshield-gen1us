@@ -26,7 +26,7 @@ function FarmShieldModel() {
         geometry={geometry}
         scale={10}
         rotation={[Math.PI / 2, Math.PI, Math.PI]}
-        position={[0, -20, 0]}
+        position={[0, -12, 0]}
       >
       <meshStandardMaterial
         color="#4CAF50"
