@@ -36,7 +36,8 @@ import {
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import PageHeader from "@/components/ui/PageHeader";
-import { MessageSquare, Heart, Send, Edit2, Trash2 } from "lucide-react";
+import { MessageSquare, Heart, Send, Edit2, Trash2, Image as ImageIcon, X } from "lucide-react";
+import { uploadPhoto, validateImageFile } from "@/lib/uploadHelper";
 
 /* OPTIONAL: path of uploaded STL from conversation history (see note above) */
 const UPLOADED_STL_PATH = "/mnt/data/farmshield.stl"; // move to /public/models/... for browser access
@@ -97,6 +98,13 @@ export default function Forum() {
   const [creatingPost, setCreatingPost] = useState(false);
   const [replyContent, setReplyContent] = useState({});
   const [showReplyForm, setShowReplyForm] = useState({});
+  
+  // photo uploads
+  const [postPhoto, setPostPhoto] = useState(null);
+  const [postPhotoPreview, setPostPhotoPreview] = useState(null);
+  const [replyPhotos, setReplyPhotos] = useState({});
+  const [replyPhotoPreviews, setReplyPhotoPreviews] = useState({});
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   // replies (per post)
   const [repliesData, setRepliesData] = useState({});
@@ -239,14 +247,81 @@ export default function Forum() {
     };
   }, [posts]);
 
+  /* -------------------- PHOTO HANDLING -------------------- */
+  const handlePostPhotoChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const validation = validateImageFile(file);
+    if (!validation.valid) {
+      setToast(validation.error);
+      return;
+    }
+
+    setPostPhoto(file);
+    const reader = new FileReader();
+    reader.onload = () => setPostPhotoPreview(reader.result);
+    reader.readAsDataURL(file);
+  };
+
+  const handleReplyPhotoChange = (postId, e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const validation = validateImageFile(file);
+    if (!validation.valid) {
+      setToast(validation.error);
+      return;
+    }
+
+    setReplyPhotos(prev => ({ ...prev, [postId]: file }));
+    const reader = new FileReader();
+    reader.onload = () => {
+      setReplyPhotoPreviews(prev => ({ ...prev, [postId]: reader.result }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removePostPhoto = () => {
+    setPostPhoto(null);
+    setPostPhotoPreview(null);
+  };
+
+  const removeReplyPhoto = (postId) => {
+    setReplyPhotos(prev => {
+      const copy = { ...prev };
+      delete copy[postId];
+      return copy;
+    });
+    setReplyPhotoPreviews(prev => {
+      const copy = { ...prev };
+      delete copy[postId];
+      return copy;
+    });
+  };
+
   /* -------------------- CREATE POST (optimistic + validation) -------------------- */
   const handleCreatePost = async () => {
     if (!userData?.id) return setToast("User belum terdeteksi!");
     const content = newPost.trim();
-    if (!content) return setToast("Tulis post dulu!");
+    if (!content && !postPhoto) return setToast("Tulis post atau tambahkan foto dulu!");
     if (content.length > MAX_POST_LENGTH) return setToast(`Panjang post maksimal ${MAX_POST_LENGTH} karakter`);
 
     setCreatingPost(true);
+    setUploadingPhoto(!!postPhoto);
+
+    let photoUrl = null;
+    if (postPhoto) {
+      try {
+        photoUrl = await uploadPhoto(postPhoto, 'forum');
+      } catch (err) {
+        console.error("Photo upload error:", err);
+        setToast("Gagal upload foto");
+        setCreatingPost(false);
+        setUploadingPhoto(false);
+        return;
+      }
+    }
 
     // optimistic UI: prepend a temporary post
     const tempId = `temp-${Date.now()}`;
@@ -255,6 +330,7 @@ export default function Forum() {
       author: userData.name,
       authorId: userData.id,
       content: escapeHtml(content),
+      photoUrl: photoUrl,
       likes: 0,
       likedBy: [],
       createdAt: new Date(),
@@ -262,12 +338,14 @@ export default function Forum() {
     };
     setPosts(prev => [tempPost, ...prev]);
     setNewPost("");
+    removePostPhoto();
 
     try {
       const ref = await addDoc(collection(db, "forum"), {
         author: userData.name,
         authorId: userData.id,
         content,
+        photoUrl: photoUrl,
         likes: 0,
         likedBy: [],
         createdAt: serverTimestamp(),
@@ -281,6 +359,7 @@ export default function Forum() {
       setToast("Gagal membuat post");
     } finally {
       setCreatingPost(false);
+      setUploadingPhoto(false);
     }
   };
 
@@ -288,8 +367,19 @@ export default function Forum() {
   const handleReply = async (postId) => {
     const contentRaw = (replyContent[postId] || "").trim();
     if (!userData?.id) return setToast("User belum terdeteksi!");
-    if (!contentRaw) return setToast("Tulis balasan dulu!");
+    if (!contentRaw && !replyPhotos[postId]) return setToast("Tulis balasan atau tambahkan foto dulu!");
     if (contentRaw.length > MAX_REPLY_LENGTH) return setToast(`Panjang balasan maksimal ${MAX_REPLY_LENGTH} karakter`);
+
+    let photoUrl = null;
+    if (replyPhotos[postId]) {
+      try {
+        photoUrl = await uploadPhoto(replyPhotos[postId], 'forum/replies');
+      } catch (err) {
+        console.error("Photo upload error:", err);
+        setToast("Gagal upload foto");
+        return;
+      }
+    }
 
     // optimistic update: append reply locally
     const tempReplyId = `temp-reply-${Date.now()}`;
@@ -298,6 +388,7 @@ export default function Forum() {
       author: userData.name,
       authorId: userData.id,
       content: escapeHtml(contentRaw),
+      photoUrl: photoUrl,
       createdAt: new Date(),
       optimistic: true,
     };
@@ -308,12 +399,14 @@ export default function Forum() {
     });
     setReplyContent(prev => ({ ...prev, [postId]: "" }));
     setShowReplyForm(prev => ({ ...prev, [postId]: false }));
+    removeReplyPhoto(postId);
 
     try {
       await addDoc(collection(db, "forum", postId, "replies"), {
         author: userData.name,
         authorId: userData.id,
         content: contentRaw,
+        photoUrl: photoUrl,
         createdAt: serverTimestamp(),
       });
       setToast("Balasan terkirim");
@@ -471,23 +564,53 @@ export default function Forum() {
             className="w-full p-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg mb-3 resize-none min-h-[100px] focus:outline-none focus:ring-2 focus:ring-blue-500"
             maxLength={MAX_POST_LENGTH}
           />
+          
+          {/* Photo Upload */}
+          <div className="mb-3">
+            <label className="cursor-pointer inline-flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition">
+              <ImageIcon className="w-4 h-4" />
+              <span className="text-sm">Tambah Foto</span>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handlePostPhotoChange}
+                className="hidden"
+              />
+            </label>
+            {postPhotoPreview && (
+              <div className="mt-2 relative inline-block">
+                <img
+                  src={postPhotoPreview}
+                  alt="Preview"
+                  className="max-w-xs max-h-48 rounded-lg border border-gray-300 dark:border-gray-600"
+                />
+                <button
+                  onClick={removePostPhoto}
+                  className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+          </div>
+
           <div className="flex items-center justify-between gap-4">
             <div className="text-sm text-gray-500 dark:text-gray-400">{newPost.length}/{MAX_POST_LENGTH}</div>
             <div className="flex gap-2">
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => { setNewPost(""); }}
+                onClick={() => { setNewPost(""); removePostPhoto(); }}
               >
                 Reset
               </Button>
               <Button
                 variant="success"
                 onClick={handleCreatePost}
-                disabled={creatingPost}
+                disabled={creatingPost || uploadingPhoto}
               >
                 <Send className="w-4 h-4 mr-1 inline" />
-                {creatingPost ? "Memproses..." : "Tambah Post"}
+                {uploadingPhoto ? "Uploading..." : creatingPost ? "Memproses..." : "Tambah Post"}
               </Button>
             </div>
           </div>
@@ -549,6 +672,18 @@ export default function Forum() {
                   </header>
 
                   <div className="mt-3 break-words text-gray-800 dark:text-gray-200" dangerouslySetInnerHTML={{ __html: escapeHtml(post.content) }} />
+                  
+                  {/* Post Photo */}
+                  {post.photoUrl && (
+                    <div className="mt-3">
+                      <img
+                        src={post.photoUrl}
+                        alt="Post attachment"
+                        className="max-w-full rounded-lg border border-gray-300 dark:border-gray-600"
+                        style={{ maxHeight: '400px', objectFit: 'contain' }}
+                      />
+                    </div>
+                  )}
 
                   {/* Reply controls */}
                   <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
@@ -560,19 +695,45 @@ export default function Forum() {
                       {showReplyForm[post.id] ? "Batal" : "Balas"}
                     </Button>
                     {showReplyForm[post.id] && (
-                      <div className="flex gap-2 mt-3">
-                        <input
-                          type="text"
-                          placeholder="Tulis balasan..."
-                          value={replyContent[post.id] || ""}
-                          onChange={(e) => setReplyContent(prev => ({ ...prev, [post.id]: e.target.value }))}
-                          className="border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 p-2 rounded-lg flex-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          maxLength={MAX_REPLY_LENGTH}
-                        />
-                        <Button variant="primary" size="sm" onClick={() => handleReply(post.id)}>
-                          <Send className="w-3 h-3 mr-1 inline" />
-                          Kirim
-                        </Button>
+                      <div className="mt-3 space-y-2">
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            placeholder="Tulis balasan..."
+                            value={replyContent[post.id] || ""}
+                            onChange={(e) => setReplyContent(prev => ({ ...prev, [post.id]: e.target.value }))}
+                            className="border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 p-2 rounded-lg flex-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            maxLength={MAX_REPLY_LENGTH}
+                          />
+                          <label className="cursor-pointer inline-flex items-center gap-1 px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition">
+                            <ImageIcon className="w-4 h-4" />
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => handleReplyPhotoChange(post.id, e)}
+                              className="hidden"
+                            />
+                          </label>
+                          <Button variant="primary" size="sm" onClick={() => handleReply(post.id)}>
+                            <Send className="w-3 h-3 mr-1 inline" />
+                            Kirim
+                          </Button>
+                        </div>
+                        {replyPhotoPreviews[post.id] && (
+                          <div className="relative inline-block">
+                            <img
+                              src={replyPhotoPreviews[post.id]}
+                              alt="Preview"
+                              className="max-w-xs max-h-32 rounded-lg border border-gray-300 dark:border-gray-600"
+                            />
+                            <button
+                              onClick={() => removeReplyPhoto(post.id)}
+                              className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -611,6 +772,16 @@ export default function Forum() {
                           )}
                         </div>
                         <div className="mt-2 text-gray-700 dark:text-gray-300 break-words" dangerouslySetInnerHTML={{ __html: escapeHtml(r.content) }} />
+                        {r.photoUrl && (
+                          <div className="mt-2">
+                            <img
+                              src={r.photoUrl}
+                              alt="Reply attachment"
+                              className="max-w-full rounded-lg border border-gray-300 dark:border-gray-600"
+                              style={{ maxHeight: '300px', objectFit: 'contain' }}
+                            />
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>

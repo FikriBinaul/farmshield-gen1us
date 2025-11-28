@@ -16,6 +16,8 @@ import {
   query,
   orderBy,
 } from "firebase/firestore";
+import { uploadPhoto, validateImageFile } from "@/lib/uploadHelper";
+import { Image as ImageIcon, X } from "lucide-react";
 
 export default function Podcast() {
   const cookie = Cookies.get("user");
@@ -27,6 +29,9 @@ export default function Podcast() {
   const [openModal, setOpenModal] = useState(false);
   const [editId, setEditId] = useState(null);
   const [search, setSearch] = useState("");
+  const [photo, setPhoto] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   // Listener realtime
   useEffect(() => {
@@ -40,10 +45,34 @@ export default function Podcast() {
     return () => unsub();
   }, []);
 
+  // Photo handling
+  const handlePhotoChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const validation = validateImageFile(file);
+    if (!validation.valid) {
+      alert(validation.error);
+      return;
+    }
+
+    setPhoto(file);
+    const reader = new FileReader();
+    reader.onload = () => setPhotoPreview(reader.result);
+    reader.readAsDataURL(file);
+  };
+
+  const removePhoto = () => {
+    setPhoto(null);
+    setPhotoPreview(null);
+  };
+
   // Buka modal untuk create
   const openCreateModal = () => {
     setForm({ title: "", url: "" });
     setEditId(null);
+    setPhoto(null);
+    setPhotoPreview(null);
     setOpenModal(true);
   };
 
@@ -51,6 +80,8 @@ export default function Podcast() {
   const openEditModal = (p) => {
     setForm({ title: p.title, url: p.url });
     setEditId(p.id);
+    setPhoto(null);
+    setPhotoPreview(p.photoUrl || null);
     setOpenModal(true);
   };
 
@@ -58,21 +89,47 @@ export default function Podcast() {
   const handleSubmit = async () => {
     if (!form.title || !form.url) return alert("Isi semua field!");
 
-    if (editId) {
-      await updateDoc(doc(db, "podcasts", editId), {
-        title: form.title,
-        url: form.url,
-      });
-    } else {
-      await addDoc(collection(db, "podcasts"), {
-        title: form.title,
-        url: form.url,
-        createdAt: serverTimestamp(),
-      });
+    setUploadingPhoto(!!photo);
+    let photoUrl = null;
+
+    if (photo) {
+      try {
+        photoUrl = await uploadPhoto(photo, 'radio');
+      } catch (err) {
+        console.error("Photo upload error:", err);
+        alert("Gagal upload foto");
+        setUploadingPhoto(false);
+        return;
+      }
     }
 
-    setOpenModal(false);
-    setForm({ title: "", url: "" });
+    try {
+      if (editId) {
+        const updateData = {
+          title: form.title,
+          url: form.url,
+        };
+        if (photoUrl) updateData.photoUrl = photoUrl;
+        
+        await updateDoc(doc(db, "podcasts", editId), updateData);
+      } else {
+        await addDoc(collection(db, "podcasts"), {
+          title: form.title,
+          url: form.url,
+          photoUrl: photoUrl,
+          createdAt: serverTimestamp(),
+        });
+      }
+
+      setOpenModal(false);
+      setForm({ title: "", url: "" });
+      removePhoto();
+    } catch (err) {
+      console.error("Submit error:", err);
+      alert("Gagal menyimpan podcast");
+    } finally {
+      setUploadingPhoto(false);
+    }
   };
 
   // Delete podcast
@@ -120,7 +177,18 @@ export default function Podcast() {
               transition={{ delay: i * 0.05 }}
               className="bg-white p-5 rounded-xl shadow border"
             >
-              <p className="text-lg font-bold text-green-800">{p.title}</p>
+              <div className="flex gap-4 mb-3">
+                {p.photoUrl && (
+                  <img
+                    src={p.photoUrl}
+                    alt={p.title}
+                    className="w-32 h-32 object-cover rounded-lg border border-gray-300"
+                  />
+                )}
+                <div className="flex-1">
+                  <p className="text-lg font-bold text-green-800">{p.title}</p>
+                </div>
+              </div>
 
               <audio controls className="w-full mt-3">
                 <source src={p.url} type="audio/mpeg" />
@@ -170,8 +238,37 @@ export default function Podcast() {
               placeholder="URL audio"
               value={form.url}
               onChange={(e) => setForm({ ...form, url: e.target.value })}
-              className="w-full p-2 border rounded mb-4"
+              className="w-full p-2 border rounded mb-3"
             />
+
+            {/* Photo Upload */}
+            <div className="mb-4">
+              <label className="cursor-pointer inline-flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition">
+                <ImageIcon className="w-4 h-4" />
+                <span className="text-sm">Tambah Foto Cover</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePhotoChange}
+                  className="hidden"
+                />
+              </label>
+              {photoPreview && (
+                <div className="mt-2 relative inline-block">
+                  <img
+                    src={photoPreview}
+                    alt="Preview"
+                    className="max-w-xs max-h-48 rounded-lg border border-gray-300"
+                  />
+                  <button
+                    onClick={removePhoto}
+                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+            </div>
 
             <div className="flex justify-end gap-2">
               <button
@@ -182,9 +279,10 @@ export default function Podcast() {
               </button>
               <button
                 onClick={handleSubmit}
-                className="px-4 py-2 bg-green-700 text-white rounded"
+                disabled={uploadingPhoto}
+                className="px-4 py-2 bg-green-700 text-white rounded disabled:opacity-50"
               >
-                Simpan
+                {uploadingPhoto ? "Uploading..." : "Simpan"}
               </button>
             </div>
           </motion.div>
