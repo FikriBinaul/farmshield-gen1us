@@ -21,6 +21,17 @@ export default function IndonesiaMap({ regionData, selectedRegion, onRegionClick
     "Sumatera Selatan": [-3.3194, 103.9144],
     "Sulawesi Selatan": [-5.1477, 119.4327],
     "Bali": [-8.3405, 115.0920],
+    "Lampung": [-5.4291, 105.2620],
+    "Riau": [0.2933, 101.7068],
+    "Aceh": [5.5483, 95.3238],
+    "Sumatera Barat": [-0.9492, 100.3543],
+    "Banten": [-6.4058, 106.0640],
+    "Yogyakarta": [-7.7956, 110.3695],
+    "Kalimantan Selatan": [-3.3194, 114.5921],
+    "Kalimantan Timur": [-0.5021, 117.1536],
+    "Sulawesi Utara": [1.4748, 124.8426],
+    "Nusa Tenggara Barat": [-8.6529, 117.3616],
+    "Nusa Tenggara Timur": [-8.6574, 121.0794],
   };
 
   // Load Leaflet modules dan fix icon
@@ -145,6 +156,7 @@ export default function IndonesiaMap({ regionData, selectedRegion, onRegionClick
             <p><strong>Konsumsi:</strong> ${new Intl.NumberFormat("id-ID").format(data.konsumsi)} ton</p>
             <p><strong>Distribusi:</strong> ${new Intl.NumberFormat("id-ID").format(data.distribusi)} ton</p>
             <p><strong>Hasil Panen:</strong> ${new Intl.NumberFormat("id-ID").format(data.hasilPanen)} kg/ha</p>
+            ${data.luasLahan ? `<p><strong>Luas Lahan:</strong> ${new Intl.NumberFormat("id-ID").format(data.luasLahan)} ha</p>` : ''}
           </div>
         </div>
       `;
@@ -289,6 +301,11 @@ export default function IndonesiaMap({ regionData, selectedRegion, onRegionClick
                     <p>
                       <strong>Hasil Panen:</strong> {new Intl.NumberFormat("id-ID").format(data.hasilPanen)} kg/ha
                     </p>
+                    {data.luasLahan && (
+                      <p>
+                        <strong>Luas Lahan:</strong> {new Intl.NumberFormat("id-ID").format(data.luasLahan)} ha
+                      </p>
+                    )}
                   </div>
                 </div>
               </Popup>

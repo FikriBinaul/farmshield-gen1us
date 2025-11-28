@@ -33,6 +33,10 @@ import {
   arrayRemove,
   getDocs,
 } from "firebase/firestore";
+import Card from "@/components/ui/Card";
+import Button from "@/components/ui/Button";
+import PageHeader from "@/components/ui/PageHeader";
+import { MessageSquare, Heart, Send, Edit2, Trash2 } from "lucide-react";
 
 /* OPTIONAL: path of uploaded STL from conversation history (see note above) */
 const UPLOADED_STL_PATH = "/mnt/data/farmshield.stl"; // move to /public/models/... for browser access
@@ -42,14 +46,14 @@ const UPLOADED_STL_PATH = "/mnt/data/farmshield.stl"; // move to /public/models/
 function Modal({ open, title, onClose, children }) {
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-2xl bg-white rounded-lg shadow-lg p-6">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <Card className="w-full max-w-2xl">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold">{title}</h3>
-          <button onClick={onClose} className="text-gray-600 hover:text-gray-800">✕</button>
+          <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">{title}</h3>
+          <button onClick={onClose} className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">✕</button>
         </div>
         {children}
-      </div>
+      </Card>
     </div>
   );
 }
@@ -440,49 +444,54 @@ export default function Forum() {
 
   return (
     <Layout>
-      <div className="max-w-4xl mx-auto p-4">
-
+      <div className="p-3 md:p-6 max-w-4xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold">Forum Petani 💬</h1>
-          <div className="text-sm text-gray-600">Signed in as <strong>{userData.name}</strong></div>
-        </div>
+        <PageHeader
+          title="Forum Petani"
+          description={`Signed in as ${userData.name}`}
+        />
 
         {/* Toast */}
         {toast && (
-          <div className="fixed right-6 top-6 z-50 bg-green-700 text-white px-4 py-2 rounded shadow">
+          <div className="fixed right-6 top-6 z-50 bg-green-700 text-white px-4 py-2 rounded-lg shadow-lg">
             {toast}
           </div>
         )}
 
         {/* Create Post */}
-        <div className="mb-6 bg-white p-4 rounded shadow">
+        <Card className="mb-6">
+          <div className="flex items-center gap-2 mb-4">
+            <MessageSquare className="w-5 h-5 text-blue-600" />
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Buat Post Baru</h3>
+          </div>
           <textarea
             value={newPost}
             onChange={(e) => setNewPost(e.target.value)}
             placeholder="Tulis post baru..."
-            className="w-full p-2 border rounded mb-2 resize-none min-h-[80px]"
+            className="w-full p-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg mb-3 resize-none min-h-[100px] focus:outline-none focus:ring-2 focus:ring-blue-500"
             maxLength={MAX_POST_LENGTH}
           />
           <div className="flex items-center justify-between gap-4">
-            <div className="text-sm text-gray-500">{newPost.length}/{MAX_POST_LENGTH}</div>
+            <div className="text-sm text-gray-500 dark:text-gray-400">{newPost.length}/{MAX_POST_LENGTH}</div>
             <div className="flex gap-2">
-              <button
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => { setNewPost(""); }}
-                className="px-3 py-1 rounded border text-sm"
               >
                 Reset
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="success"
                 onClick={handleCreatePost}
                 disabled={creatingPost}
-                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 disabled:opacity-60"
               >
+                <Send className="w-4 h-4 mr-1 inline" />
                 {creatingPost ? "Memproses..." : "Tambah Post"}
-              </button>
+              </Button>
             </div>
           </div>
-        </div>
+        </Card>
 
         {/* Posts */}
         {loadingPosts ? (
@@ -496,52 +505,74 @@ export default function Forum() {
             {posts.map((post) => {
               const liked = (post.likedBy || []).includes(userData.id);
               return (
-                <article key={post.id} className="bg-white p-4 rounded shadow mb-4">
-                  <header className="flex justify-between items-start">
+                <Card key={post.id} className="mb-4">
+                  <header className="flex justify-between items-start mb-3">
                     <div>
-                      <p className="font-semibold">{post.author}</p>
-                      <p className="text-xs text-gray-400">
-                        {post.createdAt?.toDate ? post.createdAt.toDate().toLocaleString() : (post.createdAt?.toString ? post.createdAt.toString() : "")}
+                      <p className="font-semibold text-gray-800 dark:text-gray-100">{post.author}</p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500">
+                        {post.createdAt?.toDate ? post.createdAt.toDate().toLocaleString("id-ID") : (post.createdAt?.toString ? post.createdAt.toString() : "")}
                       </p>
                     </div>
                     <div className="flex gap-2 items-center">
-                      <button
+                      <Button
+                        variant={liked ? "danger" : "outline"}
+                        size="sm"
                         onClick={() => toggleLike(post.id, post.likedBy)}
-                        className={`px-3 py-1 rounded text-sm flex items-center gap-2 ${liked ? "bg-red-500 text-white" : "bg-white border"}`}
+                        className={liked ? "" : "border-gray-300"}
                       >
-                        ❤️ {post.likes || 0}
-                      </button>
+                        <Heart className={`w-3 h-3 mr-1 inline ${liked ? "fill-current" : ""}`} />
+                        {post.likes || 0}
+                      </Button>
 
                       {(userData.role === "admin" || userData.id === post.authorId) && (
                         <>
-                          <button onClick={() => openEditPost(post.id, post.content)} className="px-2 py-1 rounded bg-yellow-400 text-sm">Edit</button>
-                          <button onClick={() => confirmDeletePost(post.id)} className="px-2 py-1 rounded bg-red-500 text-white text-sm">Hapus</button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openEditPost(post.id, post.content)}
+                            className="bg-yellow-400 hover:bg-yellow-500 text-gray-800 border-yellow-400"
+                          >
+                            <Edit2 className="w-3 h-3 mr-1 inline" />
+                            Edit
+                          </Button>
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            onClick={() => confirmDeletePost(post.id)}
+                          >
+                            <Trash2 className="w-3 h-3 mr-1 inline" />
+                            Hapus
+                          </Button>
                         </>
                       )}
                     </div>
                   </header>
 
-                  <div className="mt-3 break-words text-gray-800" dangerouslySetInnerHTML={{ __html: escapeHtml(post.content) }} />
+                  <div className="mt-3 break-words text-gray-800 dark:text-gray-200" dangerouslySetInnerHTML={{ __html: escapeHtml(post.content) }} />
 
                   {/* Reply controls */}
-                  <div className="mt-3">
-                    <button
-                      className="text-blue-600 hover:underline text-sm"
+                  <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => setShowReplyForm(prev => ({ ...prev, [post.id]: !prev[post.id] }))}
                     >
                       {showReplyForm[post.id] ? "Batal" : "Balas"}
-                    </button>
+                    </Button>
                     {showReplyForm[post.id] && (
-                      <div className="flex gap-2 mt-2">
+                      <div className="flex gap-2 mt-3">
                         <input
                           type="text"
                           placeholder="Tulis balasan..."
                           value={replyContent[post.id] || ""}
                           onChange={(e) => setReplyContent(prev => ({ ...prev, [post.id]: e.target.value }))}
-                          className="border p-2 rounded flex-1"
+                          className="border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 p-2 rounded-lg flex-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
                           maxLength={MAX_REPLY_LENGTH}
                         />
-                        <button onClick={() => handleReply(post.id)} className="bg-blue-600 text-white px-3 py-1 rounded">Kirim</button>
+                        <Button variant="primary" size="sm" onClick={() => handleReply(post.id)}>
+                          <Send className="w-3 h-3 mr-1 inline" />
+                          Kirim
+                        </Button>
                       </div>
                     )}
                   </div>
@@ -549,35 +580,52 @@ export default function Forum() {
                   {/* Replies */}
                   <div className="mt-4 space-y-3">
                     {(repliesData[post.id] || []).map((r) => (
-                      <div key={r.id} className="pl-4 border-l-2 border-gray-200">
+                      <div key={r.id} className="pl-4 border-l-2 border-gray-300 dark:border-gray-600">
                         <div className="flex justify-between items-start">
                           <div>
-                            <p className="font-semibold text-sm">{r.author}</p>
-                            <p className="text-xs text-gray-400">
-                              {r.createdAt?.toDate ? r.createdAt.toDate().toLocaleString() : (r.createdAt?.toString ? r.createdAt.toString() : "")}
+                            <p className="font-semibold text-sm text-gray-800 dark:text-gray-100">{r.author}</p>
+                            <p className="text-xs text-gray-400 dark:text-gray-500">
+                              {r.createdAt?.toDate ? r.createdAt.toDate().toLocaleString("id-ID") : (r.createdAt?.toString ? r.createdAt.toString() : "")}
                             </p>
                           </div>
                           {(userData.role === "admin" || userData.id === r.authorId) && (
                             <div className="flex gap-2">
-                              <button onClick={() => openEditReply(post.id, r.id, r.content)} className="px-2 py-1 text-sm rounded bg-yellow-300">Edit</button>
-                              <button onClick={() => confirmDeleteReply(post.id, r.id)} className="px-2 py-1 text-sm rounded bg-red-500 text-white">Hapus</button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openEditReply(post.id, r.id, r.content)}
+                                className="bg-yellow-400 hover:bg-yellow-500 text-gray-800 border-yellow-400"
+                              >
+                                <Edit2 className="w-3 h-3 mr-1 inline" />
+                                Edit
+                              </Button>
+                              <Button
+                                variant="danger"
+                                size="sm"
+                                onClick={() => confirmDeleteReply(post.id, r.id)}
+                              >
+                                <Trash2 className="w-3 h-3 mr-1 inline" />
+                                Hapus
+                              </Button>
                             </div>
                           )}
                         </div>
-                        <div className="mt-2 text-gray-700 break-words" dangerouslySetInnerHTML={{ __html: escapeHtml(r.content) }} />
+                        <div className="mt-2 text-gray-700 dark:text-gray-300 break-words" dangerouslySetInnerHTML={{ __html: escapeHtml(r.content) }} />
                       </div>
                     ))}
                   </div>
-                </article>
+                </Card>
               );
             })}
 
             {/* Load more */}
             <div className="flex justify-center mt-6">
               {hasMore ? (
-                <button onClick={loadMore} className="px-4 py-2 bg-gray-100 border rounded hover:bg-gray-200">Load more</button>
+                <Button variant="outline" onClick={loadMore}>
+                  Load more
+                </Button>
               ) : (
-                <div className="text-sm text-gray-400">Tidak ada post lagi</div>
+                <div className="text-sm text-gray-400 dark:text-gray-500">Tidak ada post lagi</div>
               )}
             </div>
           </>
@@ -588,20 +636,28 @@ export default function Forum() {
           <textarea
             value={editModal.content}
             onChange={(e) => setEditModal(prev => ({ ...prev, content: e.target.value }))}
-            className="w-full border p-2 rounded h-32"
+            className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 p-3 rounded-lg h-32 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <div className="mt-4 flex justify-end gap-3">
-            <button onClick={() => setEditModal({ open: false, type: null, content: "" })} className="px-3 py-1 rounded border">Batal</button>
-            <button onClick={submitEdit} className="px-3 py-1 rounded bg-green-600 text-white">Simpan</button>
+            <Button variant="outline" onClick={() => setEditModal({ open: false, type: null, content: "" })}>
+              Batal
+            </Button>
+            <Button variant="success" onClick={submitEdit}>
+              Simpan
+            </Button>
           </div>
         </Modal>
 
         {/* Confirm Modal */}
         <Modal open={confirmModal.open} title="Konfirmasi" onClose={() => setConfirmModal({ open: false, action: null, payload: null })}>
-          <p>Apakah kamu yakin ingin menghapus?</p>
+          <p className="text-gray-700 dark:text-gray-300">Apakah kamu yakin ingin menghapus?</p>
           <div className="mt-4 flex justify-end gap-3">
-            <button onClick={() => setConfirmModal({ open: false, action: null, payload: null })} className="px-3 py-1 rounded border">Batal</button>
-            <button onClick={performConfirmedAction} className="px-3 py-1 rounded bg-red-600 text-white">Hapus</button>
+            <Button variant="outline" onClick={() => setConfirmModal({ open: false, action: null, payload: null })}>
+              Batal
+            </Button>
+            <Button variant="danger" onClick={performConfirmedAction}>
+              Hapus
+            </Button>
           </div>
         </Modal>
       </div>

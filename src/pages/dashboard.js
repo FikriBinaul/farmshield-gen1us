@@ -25,6 +25,12 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import { Activity, Users, TrendingUp } from "lucide-react";
+import StatCard from "@/components/ui/StatCard";
+import Card from "@/components/ui/Card";
+import Button from "@/components/ui/Button";
+import PageHeader from "@/components/ui/PageHeader";
+import Table, { TableHeader, TableHeaderCell, TableBody, TableRow, TableCell } from "@/components/ui/Table";
 
 export const dynamic = "force-dynamic";
 
@@ -195,55 +201,80 @@ export default function Dashboard() {
   }, []);
 
 
+  const formatNumber = (num) => {
+    return new Intl.NumberFormat("id-ID").format(num);
+  };
+
   return (
     <AdminLayout>
-      <div className="p-8">
-
+      <div className="p-3 md:p-6">
         {/* HEADER */}
-        <div className="flex justify-between mb-6">
-          <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-          <button
-            onClick={handleLogout}
-            className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
-          >
-            Logout
-          </button>
-        </div>
+        <PageHeader
+          title="Admin Dashboard"
+          description="Kelola pengguna dan pantau statistik deteksi kutu putih"
+          action={
+            <Button variant="danger" onClick={handleLogout}>
+              Logout
+            </Button>
+          }
+        />
 
         {/* STATISTICS CARD */}
-        <div className="grid grid-cols-3 gap-4 mb-8">
-          <div className="p-4 bg-white shadow rounded">
-            <p>Total Deteksi</p>
-            <h2 className="text-3xl font-bold">{stats.total}</h2>
-          </div>
-
-          <div className="p-4 bg-white shadow rounded">
-            <p>Deteksi Hari Ini</p>
-            <h2 className="text-3xl font-bold">{stats.today}</h2>
-          </div>
-
-          <div className="p-4 bg-white shadow rounded">
-            <p>Akurasi Kutu Putih</p>
-            <h2 className="text-3xl font-bold">{stats.accuracy}%</h2>
-          </div>
-        </div>
-
-        {/* FILTER GRAPH */}
-        <div className="flex gap-4 mb-4">
-          <button onClick={() => setFilter("day")} className="bg-blue-500 text-white px-3 py-1 rounded">
-            Hari
-          </button>
-          <button onClick={() => setFilter("week")} className="bg-blue-500 text-white px-3 py-1 rounded">
-            Minggu
-          </button>
-          <button onClick={() => setFilter("month")} className="bg-blue-500 text-white px-3 py-1 rounded">
-            Bulan
-          </button>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <StatCard
+            title="Total Deteksi"
+            value={formatNumber(stats.total)}
+            subtitle="Semua waktu"
+            icon={Activity}
+            iconColor="text-blue-600"
+          />
+          <StatCard
+            title="Deteksi Hari Ini"
+            value={formatNumber(stats.today)}
+            subtitle="Hari ini"
+            icon={TrendingUp}
+            iconColor="text-green-600"
+          />
+          <StatCard
+            title="Akurasi Kutu Putih"
+            value={`${stats.accuracy}%`}
+            subtitle="Tingkat akurasi"
+            icon={Users}
+            iconColor="text-purple-600"
+          />
         </div>
 
         {/* CHART */}
-        <div className="bg-white shadow p-4 rounded mb-10">
-          <h2 className="text-xl mb-3 font-bold">Grafik Deteksi</h2>
+        <Card className="mb-8">
+          <div className="mb-4">
+            <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-100">
+              Grafik Deteksi
+            </h3>
+            {/* FILTER GRAPH */}
+            <div className="flex gap-2 mb-4">
+              <Button
+                variant={filter === "day" ? "primary" : "outline"}
+                size="sm"
+                onClick={() => setFilter("day")}
+              >
+                Hari
+              </Button>
+              <Button
+                variant={filter === "week" ? "primary" : "outline"}
+                size="sm"
+                onClick={() => setFilter("week")}
+              >
+                Minggu
+              </Button>
+              <Button
+                variant={filter === "month" ? "primary" : "outline"}
+                size="sm"
+                onClick={() => setFilter("month")}
+              >
+                Bulan
+              </Button>
+            </div>
+          </div>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -254,55 +285,76 @@ export default function Dashboard() {
               <Line type="monotone" dataKey="value" stroke="#2563EB" strokeWidth={3} />
             </LineChart>
           </ResponsiveContainer>
-        </div>
+        </Card>
 
         {/* USER TABLE */}
-        <h2 className="text-xl font-bold mb-3">Kelola User</h2>
-        
-        <form onSubmit={handleCreate} className="mb-6 flex gap-3">
-          <input type="text" placeholder="Nama" className="border p-2 rounded w-40"
-            value={newUser.name}
-            onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
-          />
-          <input type="email" placeholder="Email" className="border p-2 rounded w-56"
-            value={newUser.email}
-            onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-          />
-          <input type="password" placeholder="Password" className="border p-2 rounded w-40"
-            value={newUser.password}
-            onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-          />
-          <button className="bg-green-600 text-white px-4 rounded">
-            Tambah User
-          </button>
-        </form>
+        <Card>
+          <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-100">
+            Kelola User
+          </h3>
+          
+          <form onSubmit={handleCreate} className="mb-6 flex flex-wrap gap-3">
+            <input
+              type="text"
+              placeholder="Nama"
+              className="border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 p-2 rounded-lg w-40 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={newUser.name}
+              onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+            />
+            <input
+              type="email"
+              placeholder="Email"
+              className="border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 p-2 rounded-lg w-56 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={newUser.email}
+              onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+            />
+            <input
+              type="password"
+              placeholder="Password"
+              className="border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 p-2 rounded-lg w-40 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={newUser.password}
+              onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+            />
+            <Button variant="success" type="submit">
+              Tambah User
+            </Button>
+          </form>
 
-        <table className="border w-full text-left">
-          <thead>
-            <tr className="border-b bg-gray-100">
-              <th className="p-2">Nama</th>
-              <th className="p-2">Email</th>
-              <th className="p-2">Aksi</th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.map((u) => (
-              <tr key={u.id} className="border-b hover:bg-gray-50">
-                <td className="p-2">{u.name}</td>
-                <td className="p-2">{u.email}</td>
-                <td className="p-2 flex gap-2">
-                  <button onClick={() => handleEdit(u.id)} className="bg-yellow-400 px-2 py-1 rounded">
-                    Edit
-                  </button>
-                  <button onClick={() => handleDelete(u.id)} className="bg-red-500 text-white px-2 py-1 rounded">
-                    Hapus
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
+          <Table>
+            <TableHeader>
+              <TableHeaderCell>Nama</TableHeaderCell>
+              <TableHeaderCell>Email</TableHeaderCell>
+              <TableHeaderCell className="text-right">Aksi</TableHeaderCell>
+            </TableHeader>
+            <TableBody>
+              {users.map((u) => (
+                <TableRow key={u.id}>
+                  <TableCell className="font-medium">{u.name}</TableCell>
+                  <TableCell>{u.email}</TableCell>
+                  <TableCell>
+                    <div className="flex gap-2 justify-end">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEdit(u.id)}
+                        className="bg-yellow-400 hover:bg-yellow-500 text-gray-800 border-yellow-400"
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        onClick={() => handleDelete(u.id)}
+                      >
+                        Hapus
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
       </div>
     </AdminLayout>
   );

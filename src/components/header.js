@@ -1,21 +1,46 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Moon, Sun, Menu, X, Search } from "lucide-react";
 import { useSidebar } from "@/contexts/SidebarContext";
 import { useDarkMode } from "@/contexts/DarkModeContext";
 
 export default function Header() {
-  const { open } = useSidebar();
+  const { open, setOpen } = useSidebar();
   const { darkMode, toggleDarkMode } = useDarkMode();
   const [isOpen, setIsOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const toggleMenu = () => setIsOpen(!isOpen);
+  const toggleSidebar = () => setOpen(!open);
 
   return (
     <header className="w-full glass-navbar dark:text-white">
       <div className="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
 
+        {/* Mobile Sidebar Toggle */}
+        {isMobile && (
+          <button
+            onClick={toggleSidebar}
+            className="p-2 dark:text-white hover:bg-white/10 rounded-lg transition-all"
+          >
+            <Menu size={24} />
+          </button>
+        )}
+
         {/* Logo */}
-        <div className="font-bold text-xl dark:text-white">Farmshield</div>
+        <div className="font-bold text-xl dark:text-white flex-1 text-center md:text-left">
+          Farmshield
+        </div>
 
         {/* Desktop Nav */}
         <nav className="hidden md:flex gap-6 items-center">
@@ -38,9 +63,9 @@ export default function Header() {
           </button>
         </nav>
 
-        {/* Mobile Hamburger */}
-        <button className="md:hidden p-2 dark:text-white" onClick={toggleMenu}>
-          {isOpen ? <X size={26} /> : <Menu size={26} />}
+        {/* Mobile Menu Toggle */}
+        <button className="md:hidden p-2 dark:text-white hover:bg-white/10 rounded-lg transition-all" onClick={toggleMenu}>
+          {isOpen ? <X size={26} /> : <Search size={26} />}
         </button>
       </div>
 

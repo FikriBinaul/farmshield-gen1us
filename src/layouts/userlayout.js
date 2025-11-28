@@ -28,7 +28,7 @@ export default function UserLayout({ children }) {
 
       {/* Konten utama (header + content + footer) */}
       <div 
-        className="flex-1 flex flex-col transition-all duration-300"
+        className="flex-1 flex flex-col transition-all duration-300 w-full"
         style={{
           marginLeft: isMobile ? '0px' : (open ? '256px' : '80px')
         }}
@@ -38,7 +38,7 @@ export default function UserLayout({ children }) {
         <Header />
 
         {/* Konten halaman */}
-        <main className="flex-1 p-6 overflow-y-auto relative z-10 bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100">
+        <main className="flex-1 p-3 md:p-6 overflow-y-auto relative z-10 bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100">
           {children}
           <LeafAnimation />
         </main>

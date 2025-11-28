@@ -19,7 +19,15 @@ import {
   LineChart,
   Line,
 } from "recharts";
-import { MapPin, TrendingUp, Package, ShoppingCart, Leaf } from "lucide-react";
+import { MapPin, TrendingUp, Package, ShoppingCart, Leaf, FileText, ExternalLink } from "lucide-react";
+import {
+  regionData,
+  konsumsiBulananData,
+  distribusiSektorData,
+  trenProduksiData,
+  dataSources,
+  informasiTambahan,
+} from "@/data/agricultureData";
 
 // Dynamic import untuk peta (client-side only)
 const IndonesiaMap = dynamic(() => import("@/components/IndonesiaMap"), {
@@ -36,66 +44,7 @@ export default function PetaStatistik() {
   const [user, setUser] = useState(null);
   const [selectedRegion, setSelectedRegion] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  // Data statistik per daerah (dummy data untuk demo)
-  const regionData = {
-    "Jawa Barat": {
-      produksi: 450000,
-      konsumsi: 380000,
-      distribusi: 420000,
-      hasilPanen: 12500,
-      lat: -6.9175,
-      lng: 107.6191,
-    },
-    "Jawa Tengah": {
-      produksi: 380000,
-      konsumsi: 320000,
-      distribusi: 360000,
-      hasilPanen: 9800,
-      lat: -7.0245,
-      lng: 110.1875,
-    },
-    "Jawa Timur": {
-      produksi: 520000,
-      konsumsi: 450000,
-      distribusi: 480000,
-      hasilPanen: 15200,
-      lat: -7.5361,
-      lng: 112.2384,
-    },
-    "Sumatera Utara": {
-      produksi: 280000,
-      konsumsi: 240000,
-      distribusi: 260000,
-      hasilPanen: 7200,
-      lat: 3.5952,
-      lng: 98.6722,
-    },
-    "Sumatera Selatan": {
-      produksi: 220000,
-      konsumsi: 190000,
-      distribusi: 210000,
-      hasilPanen: 5800,
-      lat: -3.3194,
-      lng: 103.9144,
-    },
-    "Sulawesi Selatan": {
-      produksi: 180000,
-      konsumsi: 150000,
-      distribusi: 170000,
-      hasilPanen: 4200,
-      lat: -5.1477,
-      lng: 119.4327,
-    },
-    "Bali": {
-      produksi: 95000,
-      konsumsi: 85000,
-      distribusi: 90000,
-      hasilPanen: 2800,
-      lat: -8.3405,
-      lng: 115.0920,
-    },
-  };
+  const [showSources, setShowSources] = useState(false);
 
   // Data untuk chart hasil panen per bulan
   const panenData = Object.entries(regionData).map(([region, data]) => ({
@@ -111,21 +60,19 @@ export default function PetaStatistik() {
     hasilPanen: data.hasilPanen,
   }));
 
-  // Data konsumsi nasional
-  const konsumsiData = [
-    { bulan: "Jan", konsumsi: 320 },
-    { bulan: "Feb", konsumsi: 340 },
-    { bulan: "Mar", konsumsi: 380 },
-    { bulan: "Apr", konsumsi: 420 },
-    { bulan: "Mei", konsumsi: 450 },
-    { bulan: "Jun", konsumsi: 480 },
-    { bulan: "Jul", konsumsi: 520 },
-    { bulan: "Agu", konsumsi: 560 },
-    { bulan: "Sep", konsumsi: 540 },
-    { bulan: "Okt", konsumsi: 500 },
-    { bulan: "Nov", konsumsi: 460 },
-    { bulan: "Des", konsumsi: 400 },
-  ];
+  // Data konsumsi nasional (format untuk chart)
+  const konsumsiData = konsumsiBulananData.map((item) => ({
+    bulan: item.bulan.substring(0, 3), // ambil 3 karakter pertama
+    konsumsi: item.konsumsi,
+    fullName: item.bulan,
+  }));
+
+  // Data distribusi per sektor untuk pie chart
+  const distribusiSektorChart = distribusiSektorData.map((item) => ({
+    name: item.sektor,
+    value: item.persentase,
+    volume: item.volume,
+  }));
 
   // Warna untuk pie chart
   const COLORS = ["#10b981", "#3b82f6", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#06b6d4"];
@@ -166,25 +113,106 @@ export default function PetaStatistik() {
     return new Intl.NumberFormat("id-ID").format(num);
   };
 
-  const totalProduksi = Object.values(regionData).reduce((sum, r) => sum + r.produksi, 0);
-  const totalKonsumsi = Object.values(regionData).reduce((sum, r) => sum + r.konsumsi, 0);
-  const totalDistribusi = Object.values(regionData).reduce((sum, r) => sum + r.distribusi, 0);
+  const totalProduksi = informasiTambahan.totalProduksi;
+  const totalKonsumsi = informasiTambahan.totalKonsumsi;
+  const totalDistribusi = informasiTambahan.totalDistribusi;
 
   return (
     <Layout>
-      <div className="p-6">
+      <div className="p-3 md:p-6">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">
-            Peta Statistik Pertanian Tomat
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Visualisasi data hasil panen, konsumsi, dan distribusi tomat per daerah di Indonesia
-          </p>
+        <div className="mb-6 md:mb-8">
+          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+            <div className="flex-1">
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">
+                Peta Statistik Pertanian Tomat
+              </h1>
+              <p className="text-sm md:text-base text-gray-600 dark:text-gray-400">
+                Visualisasi data hasil panen, konsumsi, dan distribusi tomat per daerah di Indonesia
+              </p>
+              <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mt-2">
+                Data {informasiTambahan.periodeData} | Update: {informasiTambahan.updateTerakhir}
+              </p>
+            </div>
+            <button
+              onClick={() => setShowSources(!showSources)}
+              className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors w-full md:w-auto"
+            >
+              <FileText className="w-4 h-4" />
+              <span>Sumber Data</span>
+            </button>
+          </div>
+
+          {/* Sumber Data Modal */}
+          {showSources && (
+            <div className="mt-4 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">
+                  Sumber Data
+                </h3>
+                <button
+                  onClick={() => setShowSources(false)}
+                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <h4 className="font-semibold text-sm md:text-base text-gray-700 dark:text-gray-300 mb-2">Produksi</h4>
+                  <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400">
+                    <strong>Sumber:</strong> {dataSources.produksi.sumber}
+                  </p>
+                  <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400">
+                    <strong>Publikasi:</strong> {dataSources.produksi.publikasi} ({dataSources.produksi.tahun})
+                  </p>
+                  <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400">
+                    <strong>Catatan:</strong> {dataSources.produksi.catatan}
+                  </p>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-sm md:text-base text-gray-700 dark:text-gray-300 mb-2">Konsumsi</h4>
+                  <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400">
+                    <strong>Sumber:</strong> {dataSources.konsumsi.sumber}
+                  </p>
+                  <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400">
+                    <strong>Publikasi:</strong> {dataSources.konsumsi.publikasi} ({dataSources.konsumsi.tahun})
+                  </p>
+                  <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400">
+                    <strong>Catatan:</strong> {dataSources.konsumsi.catatan}
+                  </p>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-sm md:text-base text-gray-700 dark:text-gray-300 mb-2">Distribusi</h4>
+                  <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400">
+                    <strong>Sumber:</strong> {dataSources.distribusi.sumber}
+                  </p>
+                  <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400">
+                    <strong>Publikasi:</strong> {dataSources.distribusi.publikasi} ({dataSources.distribusi.tahun})
+                  </p>
+                  <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400">
+                    <strong>Catatan:</strong> {dataSources.distribusi.catatan}
+                  </p>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-sm md:text-base text-gray-700 dark:text-gray-300 mb-2">Hasil Panen</h4>
+                  <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400">
+                    <strong>Sumber:</strong> {dataSources.hasilPanen.sumber}
+                  </p>
+                  <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400">
+                    <strong>Publikasi:</strong> {dataSources.hasilPanen.publikasi} ({dataSources.hasilPanen.tahun})
+                  </p>
+                  <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400">
+                    <strong>Catatan:</strong> {dataSources.hasilPanen.catatan}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-8">
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between">
               <div>
@@ -239,11 +267,11 @@ export default function PetaStatistik() {
         </div>
 
         {/* Peta dan Statistik Daerah */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
           {/* Peta Indonesia dengan Leaflet */}
-          <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
-            <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-100">Peta Indonesia</h2>
-            <div className="relative bg-gray-50 dark:bg-gray-900 rounded-lg overflow-hidden" style={{ height: "500px" }}>
+          <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 md:p-6 border border-gray-200 dark:border-gray-700">
+            <h2 className="text-lg md:text-xl font-semibold mb-3 md:mb-4 text-gray-800 dark:text-gray-100">Peta Indonesia</h2>
+            <div className="relative bg-gray-50 dark:bg-gray-900 rounded-lg overflow-hidden h-[300px] md:h-[500px]">
               <IndonesiaMap
                 regionData={regionData}
                 selectedRegion={selectedRegion}
@@ -268,11 +296,11 @@ export default function PetaStatistik() {
 
             {/* Info Daerah yang Dipilih */}
             {selectedRegion && (
-              <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
-                <h3 className="font-semibold text-green-800 dark:text-green-300 mb-2">
+              <div className="mt-3 md:mt-4 p-3 md:p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                <h3 className="font-semibold text-green-800 dark:text-green-300 mb-2 text-sm md:text-base">
                   {selectedRegion}
                 </h3>
-                <div className="grid grid-cols-3 gap-4 text-sm">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 text-xs md:text-sm mb-3">
                   <div>
                     <p className="text-gray-600 dark:text-gray-400">Produksi</p>
                     <p className="font-semibold text-gray-800 dark:text-gray-100">
@@ -286,20 +314,31 @@ export default function PetaStatistik() {
                     </p>
                   </div>
                   <div>
+                    <p className="text-gray-600 dark:text-gray-400">Distribusi</p>
+                    <p className="font-semibold text-gray-800 dark:text-gray-100">
+                      {formatNumber(regionData[selectedRegion].distribusi)} ton
+                    </p>
+                  </div>
+                  <div>
                     <p className="text-gray-600 dark:text-gray-400">Hasil Panen</p>
                     <p className="font-semibold text-gray-800 dark:text-gray-100">
                       {formatNumber(regionData[selectedRegion].hasilPanen)} kg/ha
                     </p>
                   </div>
                 </div>
+                {regionData[selectedRegion].sumber && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                    <strong>Sumber:</strong> {regionData[selectedRegion].sumber}
+                  </p>
+                )}
               </div>
             )}
           </div>
 
           {/* List Daerah */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
-            <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-100">Daftar Daerah</h2>
-            <div className="space-y-3 max-h-[500px] overflow-y-auto">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 md:p-6 border border-gray-200 dark:border-gray-700">
+            <h2 className="text-lg md:text-xl font-semibold mb-3 md:mb-4 text-gray-800 dark:text-gray-100">Daftar Daerah</h2>
+            <div className="space-y-2 md:space-y-3 max-h-[300px] md:max-h-[500px] overflow-y-auto">
               {Object.entries(regionData)
                 .sort((a, b) => b[1].produksi - a[1].produksi)
                 .map(([region, data]) => (
@@ -334,7 +373,7 @@ export default function PetaStatistik() {
         </div>
 
         {/* Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-6 md:mb-8">
           {/* Chart Produksi vs Konsumsi */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
             <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-100">
@@ -353,35 +392,41 @@ export default function PetaStatistik() {
             </ResponsiveContainer>
           </div>
 
-          {/* Chart Distribusi */}
+          {/* Chart Distribusi per Sektor */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
             <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-100">
-              Distribusi Hasil Panen
+              Distribusi per Sektor
             </h3>
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
-                  data={distribusiData}
+                  data={distribusiSektorChart}
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={({ name, percent }) => `${name.split(" ").pop()}: ${(percent * 100).toFixed(0)}%`}
+                  label={({ name, value }) => `${name}: ${value}%`}
                   outerRadius={100}
                   fill="#8884d8"
-                  dataKey="distribusi"
+                  dataKey="value"
                 >
-                  {distribusiData.map((entry, index) => (
+                  {distribusiSektorChart.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip />
+                <Tooltip formatter={(value, name, props) => [
+                  `${value}% (${formatNumber(props.payload.volume)} ton)`,
+                  name
+                ]} />
               </PieChart>
             </ResponsiveContainer>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
+              Sumber: {distribusiSektorData[0]?.sumber}
+            </p>
           </div>
         </div>
 
         {/* Chart Konsumsi Nasional */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700 mb-8">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 md:p-6 border border-gray-200 dark:border-gray-700 mb-6 md:mb-8">
           <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-100">
             Tren Konsumsi Nasional per Bulan
           </h3>
@@ -390,7 +435,13 @@ export default function PetaStatistik() {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="bulan" />
               <YAxis />
-              <Tooltip />
+              <Tooltip 
+                formatter={(value, name, props) => [
+                  `${formatNumber(value)} ribu ton`,
+                  `Konsumsi ${props.payload.fullName}`
+                ]}
+                labelFormatter={(label) => `Bulan: ${label}`}
+              />
               <Legend />
               <Line
                 type="monotone"
@@ -402,14 +453,53 @@ export default function PetaStatistik() {
               />
             </LineChart>
           </ResponsiveContainer>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
+            Sumber: {konsumsiBulananData[0]?.sumber}
+          </p>
+        </div>
+
+        {/* Chart Tren Produksi 5 Tahun */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 md:p-6 border border-gray-200 dark:border-gray-700 mb-6 md:mb-8">
+          <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-100">
+            Tren Produksi dan Konsumsi 5 Tahun Terakhir
+          </h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={trenProduksiData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="tahun" />
+              <YAxis />
+              <Tooltip formatter={(value) => `${formatNumber(value)} ribu ton`} />
+              <Legend />
+              <Line
+                type="monotone"
+                dataKey="produksi"
+                stroke="#10b981"
+                strokeWidth={3}
+                name="Produksi (ribu ton)"
+                dot={{ fill: "#10b981", r: 5 }}
+              />
+              <Line
+                type="monotone"
+                dataKey="konsumsi"
+                stroke="#3b82f6"
+                strokeWidth={3}
+                name="Konsumsi (ribu ton)"
+                dot={{ fill: "#3b82f6", r: 5 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
+            Sumber: BPS - Statistik Pertanian 2019-2023
+          </p>
         </div>
 
         {/* Tabel Detail */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
-          <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-100">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 md:p-6 border border-gray-200 dark:border-gray-700">
+          <h3 className="text-base md:text-lg font-semibold mb-3 md:mb-4 text-gray-800 dark:text-gray-100">
             Detail Statistik per Daerah
           </h3>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto -mx-4 md:mx-0">
+            <div className="inline-block min-w-full align-middle px-4 md:px-0">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-200 dark:border-gray-700">
@@ -418,6 +508,7 @@ export default function PetaStatistik() {
                   <th className="text-right p-3 text-gray-700 dark:text-gray-300">Konsumsi (ton)</th>
                   <th className="text-right p-3 text-gray-700 dark:text-gray-300">Distribusi (ton)</th>
                   <th className="text-right p-3 text-gray-700 dark:text-gray-300">Hasil Panen (kg/ha)</th>
+                  <th className="text-right p-3 text-gray-700 dark:text-gray-300">Luas Lahan (ha)</th>
                 </tr>
               </thead>
               <tbody>
@@ -445,10 +536,22 @@ export default function PetaStatistik() {
                       <td className="p-3 text-right text-gray-700 dark:text-gray-300">
                         {formatNumber(data.hasilPanen)}
                       </td>
+                      <td className="p-3 text-right text-gray-700 dark:text-gray-300">
+                        {formatNumber(data.luasLahan)}
+                      </td>
                     </tr>
                   ))}
               </tbody>
             </table>
+            </div>
+          </div>
+          <div className="mt-4 p-3 md:p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+            <p className="text-xs md:text-sm text-gray-700 dark:text-gray-300">
+              <strong>Total Luas Lahan:</strong> {formatNumber(informasiTambahan.totalLuasLahan)} hektar
+            </p>
+            <p className="text-xs md:text-sm text-gray-700 dark:text-gray-300 mt-1">
+              <strong>Rata-rata Hasil Panen:</strong> {formatNumber(informasiTambahan.rataRataHasilPanen)} kg/ha
+            </p>
           </div>
         </div>
       </div>

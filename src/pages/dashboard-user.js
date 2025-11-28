@@ -2,6 +2,7 @@ import UserLayout from "@/layouts/userlayout";
 import { useEffect, useState } from "react";
 import Cookies from "js-cookie";
 import { useRouter } from "next/router";
+import { Activity, Calendar, TrendingUp } from "lucide-react";
 
 import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
@@ -17,6 +18,10 @@ import {
   CartesianGrid,
   ResponsiveContainer,
 } from "recharts";
+import StatCard from "@/components/ui/StatCard";
+import Card from "@/components/ui/Card";
+import Button from "@/components/ui/Button";
+import PageHeader from "@/components/ui/PageHeader";
 
 export const dynamic = "force-dynamic";
 
@@ -114,96 +119,97 @@ export default function DashboardUser() {
   };
 
 
+  const formatNumber = (num) => {
+    return new Intl.NumberFormat("id-ID").format(num);
+  };
+
+  const todayCount = rawDetections.filter((e) => {
+    const today = new Date();
+    const start = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+    return e.timestamp >= start;
+  }).length;
+
+  const weekCount = rawDetections.filter((e) => e.timestamp >= Date.now() - 7 * 24 * 3600 * 1000).length;
+
   return (
     <UserLayout>
-      <div className="p-8">
-
+      <div className="p-3 md:p-6">
         {/* HEADER */}
-        <div className="mb-10">
-          <h1 className="text-3xl font-bold mb-1">Dashboard Pengguna</h1>
-          <p className="text-gray-600">Selamat datang, {data?.name || user?.name || "Pengguna"}</p>
-        </div>
+        <PageHeader
+          title="Dashboard Pengguna"
+          description={`Selamat datang, ${data?.name || user?.name || "Pengguna"}`}
+        />
 
         {/* QUICK STATS */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-          
-          <div className="bg-white shadow rounded-xl p-6 border">
-            <p className="text-gray-500 text-sm">Total Deteksi Hari Ini</p>
-            <h2 className="text-3xl font-bold mt-1">
-              {
-                rawDetections.filter((e) => {
-                  const today = new Date();
-                  const start = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
-                  return e.timestamp >= start;
-                }).length
-              }
-            </h2>
-          </div>
-
-          <div className="bg-white shadow rounded-xl p-6 border">
-            <p className="text-gray-500 text-sm">Total Deteksi Minggu Ini</p>
-            <h2 className="text-3xl font-bold mt-1">
-              {
-                rawDetections.filter((e) => e.timestamp >= Date.now() - 7 * 24 * 3600 * 1000)
-                  .length
-              }
-            </h2>
-          </div>
-
-          <div className="bg-white shadow rounded-xl p-6 border">
-            <p className="text-gray-500 text-sm">Total Semua Deteksi</p>
-            <h2 className="text-3xl font-bold mt-1">{rawDetections.length}</h2>
-          </div>
-
-        </div>
-
-        {/* FILTER BUTTONS */}
-        <div className="flex gap-3 mb-4">
-          {["today", "yesterday", "week", "all"].map((range) => (
-            <button
-              key={range}
-              onClick={() => setFilterRange(range)}
-              className={`px-4 py-2 rounded-md font-medium capitalize ${
-                filterRange === range
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-200 text-gray-800"
-              }`}
-            >
-              {range === "today"
-                ? "Hari Ini"
-                : range === "yesterday"
-                ? "Kemarin"
-                : range === "week"
-                ? "7 Hari"
-                : "Semua"}
-            </button>
-          ))}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <StatCard
+            title="Total Deteksi Hari Ini"
+            value={formatNumber(todayCount)}
+            subtitle="Hari ini"
+            icon={Activity}
+            iconColor="text-blue-600"
+          />
+          <StatCard
+            title="Total Deteksi Minggu Ini"
+            value={formatNumber(weekCount)}
+            subtitle="7 hari terakhir"
+            icon={Calendar}
+            iconColor="text-green-600"
+          />
+          <StatCard
+            title="Total Semua Deteksi"
+            value={formatNumber(rawDetections.length)}
+            subtitle="Semua waktu"
+            icon={TrendingUp}
+            iconColor="text-purple-600"
+          />
         </div>
 
         {/* GRAPH */}
-        <div className="bg-white shadow rounded-xl border p-6 h-96 mb-16">
-          <h3 className="text-lg font-semibold mb-4">Grafik Deteksi</h3>
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={filtered}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="time" />
-              <YAxis allowDecimals={false} />
-              <Tooltip />
-              <Line type="monotone" dataKey="count" stroke="#2563eb" strokeWidth={3} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
+        <Card className="mb-8">
+          <div className="mb-4">
+            <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-100">
+              Grafik Deteksi
+            </h3>
+            {/* FILTER BUTTONS */}
+            <div className="flex flex-wrap gap-2 mb-4">
+              {["today", "yesterday", "week", "all"].map((range) => (
+                <Button
+                  key={range}
+                  variant={filterRange === range ? "primary" : "outline"}
+                  size="sm"
+                  onClick={() => setFilterRange(range)}
+                >
+                  {range === "today"
+                    ? "Hari Ini"
+                    : range === "yesterday"
+                    ? "Kemarin"
+                    : range === "week"
+                    ? "7 Hari"
+                    : "Semua"}
+                </Button>
+              ))}
+            </div>
+          </div>
+          <div style={{ height: "400px" }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={filtered}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="time" />
+                <YAxis allowDecimals={false} />
+                <Tooltip />
+                <Line type="monotone" dataKey="count" stroke="#2563eb" strokeWidth={3} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
 
         {/* LOGOUT */}
-        <div className="mt-4">
-          <button
-            onClick={handleLogout}
-            className="bg-red-600 px-4 py-2 text-white rounded-lg hover:bg-red-700"
-          >
+        <div className="flex justify-end">
+          <Button variant="danger" onClick={handleLogout}>
             Logout
-          </button>
+          </Button>
         </div>
-
       </div>
     </UserLayout>
   );

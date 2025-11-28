@@ -4,6 +4,10 @@ import AdminLayout from "@/layouts/adminlayout";
 import UserLayout from "@/layouts/userlayout";
 import Cookies from "js-cookie";
 import useSWR from "swr";
+import Card from "@/components/ui/Card";
+import Button from "@/components/ui/Button";
+import PageHeader from "@/components/ui/PageHeader";
+import { Camera, AlertCircle } from "lucide-react";
 
 const fetcher = (url) => fetch(url).then((r) => r.json());
 
@@ -103,19 +107,26 @@ export default function Deteksi() {
 
   return (
     <Layout>
-      <div className="container mx-auto p-4">
-        <h1 className="text-2xl font-bold mb-4">Deteksi Kutu Putih — Streaming</h1>
+      <div className="p-3 md:p-6">
+        <PageHeader
+          title="Deteksi Kutu Putih"
+          description="Streaming deteksi real-time dengan AI"
+        />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="rounded bg-white p-4 shadow">
-            <h2 className="font-semibold mb-2">Streaming</h2>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Streaming Card */}
+          <Card>
+            <div className="flex items-center gap-2 mb-4">
+              <Camera className="w-5 h-5 text-blue-600" />
+              <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Streaming</h2>
+            </div>
 
-            <div className="relative w-full" style={{ minHeight: 360 }}>
+            <div className="relative w-full bg-gray-100 dark:bg-gray-900 rounded-lg overflow-hidden" style={{ minHeight: 360 }}>
               <img
                 ref={imgRef}
                 src={`${FASTAPI_BASE}/video`}
                 alt="stream"
-                className="w-full h-auto max-h-[640px] object-contain border"
+                className="w-full h-auto max-h-[640px] object-contain"
                 style={{ display: "block" }}
                 onError={() => setError("Gagal memuat stream. Cek URL / CORS / server")}
               />
@@ -127,62 +138,78 @@ export default function Deteksi() {
               />
             </div>
 
-            <div className="mt-3 flex items-center gap-2">
-              <button
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <Button
+                variant={polling ? "primary" : "outline"}
+                size="sm"
                 onClick={() => setPolling(true)}
-                className="px-3 py-2 bg-blue-600 text-white rounded"
               >
-                Mulai Polling Hasil
-              </button>
-              <button
+                Mulai Polling
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
                 onClick={() => setPolling(false)}
-                className="px-3 py-2 bg-gray-400 text-white rounded"
               >
                 Stop Polling
-              </button>
-              <p className="ml-3 text-sm text-gray-600">Polling hasil dari endpoint /result</p>
+              </Button>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Polling hasil dari endpoint /result
+              </p>
             </div>
-          </div>
+          </Card>
 
-          <div className="rounded bg-white p-4 shadow">
-            <h2 className="font-semibold mb-2">Hasil Deteksi</h2>
+          {/* Hasil Deteksi Card */}
+          <Card>
+            <div className="flex items-center gap-2 mb-4">
+              <AlertCircle className="w-5 h-5 text-green-600" />
+              <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Hasil Deteksi</h2>
+            </div>
 
             {error && (
-              <div className="mb-3 text-red-600">{error}</div>
+              <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-600 dark:text-red-400">
+                {error}
+              </div>
             )}
 
             {!result ? (
-              <p className="text-gray-600">Menunggu hasil…</p>
+              <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                Menunggu hasil deteksi…
+              </div>
             ) : (
               <div>
-                <p className="mb-2">
-                  <strong>Jumlah:</strong> {result.count}
-                </p>
+                <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Jumlah Terdeteksi</p>
+                  <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{result.count}</p>
+                </div>
 
                 {result.boxes && result.boxes.length > 0 ? (
-                  <div className="space-y-2">
+                  <div className="space-y-3 mb-4">
+                    <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Detail Deteksi:</p>
                     {result.boxes.map((b, i) => (
-                      <div key={i} className="p-2 border rounded">
-                        <div className="text-sm">
+                      <div key={i} className="p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-700/50">
+                        <div className="text-sm font-medium text-gray-800 dark:text-gray-100 mb-1">
                           <strong>{b.class_name}</strong> — {(b.confidence*100).toFixed(1)}%
                         </div>
-                        <div className="text-xs text-gray-600">
-                          xyxy: [{b.xyxy.join(", ")}]
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                          Koordinat: [{b.xyxy.join(", ")}]
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-gray-600">Tidak ada objek terdeteksi.</p>
+                  <div className="text-center py-4 text-gray-500 dark:text-gray-400">
+                    Tidak ada objek terdeteksi.
+                  </div>
                 )}
 
-                <div className="mt-3 text-xs text-gray-500">
+                <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg text-xs text-gray-500 dark:text-gray-400 space-y-1">
                   <div>Frame original: {result.frame_size?.w} x {result.frame_size?.h}</div>
-                  <div>Timestamp: {new Date(result.timestamp).toLocaleString()}</div>
+                  <div>Timestamp: {new Date(result.timestamp).toLocaleString("id-ID")}</div>
                 </div>
               </div>
             )}
-          </div>
+          </Card>
         </div>
       </div>
     </Layout>

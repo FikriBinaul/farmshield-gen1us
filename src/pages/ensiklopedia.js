@@ -14,47 +14,44 @@ import {
   query,
   orderBy,
 } from "firebase/firestore";
+import Card from "@/components/ui/Card";
+import Button from "@/components/ui/Button";
+import PageHeader from "@/components/ui/PageHeader";
+import { BookOpen, Plus, Edit2, Trash2 } from "lucide-react";
 
 // 🔧 Reusable Modal
 function Modal({ open, onClose, onSubmit, title, data, setData }) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-white p-6 rounded-xl shadow-xl w-[450px] animate-fadeIn">
-        <h2 className="text-xl font-semibold mb-4">{title}</h2>
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <Card className="w-full max-w-2xl">
+        <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-100">{title}</h2>
 
         <input
           type="text"
           placeholder="Judul artikel"
           value={data.title}
           onChange={(e) => setData({ ...data, title: e.target.value })}
-          className="w-full border p-2 rounded mb-3"
+          className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 p-3 rounded-lg mb-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
 
         <textarea
           placeholder="Konten artikel"
           value={data.content}
           onChange={(e) => setData({ ...data, content: e.target.value })}
-          className="w-full border p-2 rounded h-36 resize-none"
+          className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 p-3 rounded-lg h-36 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
 
         <div className="flex justify-end gap-3 mt-4">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
-          >
+          <Button variant="outline" onClick={onClose}>
             Batal
-          </button>
-
-          <button
-            onClick={onSubmit}
-            className="px-4 py-2 bg-green-700 text-white rounded hover:bg-green-800"
-          >
+          </Button>
+          <Button variant="success" onClick={onSubmit}>
             Simpan
-          </button>
+          </Button>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }
@@ -120,66 +117,93 @@ export default function Ensiklopedia() {
 
   return (
     <Layout>
-      <h1 className="text-3xl font-bold mb-4">Ensiklopedia Pertanian 📚</h1>
+      <div className="p-3 md:p-6">
+        <PageHeader
+          title="Ensiklopedia Pertanian"
+          description="Kumpulan artikel dan informasi tentang pertanian"
+          action={
+            parsed.role === "admin" && (
+              <Button
+                variant="success"
+                onClick={() => {
+                  setForm({ title: "", content: "" });
+                  setEditID(null);
+                  setModalOpen(true);
+                }}
+              >
+                <Plus className="w-4 h-4 mr-2 inline" />
+                Tambah Artikel
+              </Button>
+            )
+          }
+        />
 
-      {/* Modal Form */}
-      <Modal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        onSubmit={handleSubmit}
-        title={editID ? "Edit Artikel" : "Tambah Artikel"}
-        data={form}
-        setData={setForm}
-      />
+        {/* Modal Form */}
+        <Modal
+          open={modalOpen}
+          onClose={() => setModalOpen(false)}
+          onSubmit={handleSubmit}
+          title={editID ? "Edit Artikel" : "Tambah Artikel"}
+          data={form}
+          setData={setForm}
+        />
 
-      {parsed.role === "admin" && (
-        <button
-          onClick={() => {
-            setForm({ title: "", content: "" });
-            setEditID(null);
-            setModalOpen(true);
-          }}
-          className="mb-5 bg-green-700 text-white px-4 py-2 rounded hover:bg-green-800"
-        >
-          + Tambah Artikel
-        </button>
-      )}
-
-      {/* Loading */}
-      {loading && <p className="text-gray-500">Memuat data...</p>}
-
-      {/* Artikel List */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {articles.map((item) => (
-          <div
-            key={item.id}
-            className="bg-white border rounded-xl p-5 shadow-md hover:shadow-lg transition-shadow"
-          >
-            <h2 className="font-semibold text-xl mb-2">{item.title}</h2>
-            <p className="whitespace-pre-line text-gray-700">{item.content}</p>
-
-            {parsed.role === "admin" && (
-              <div className="flex gap-3 mt-4">
-                <button
-                  onClick={() => {
-                    setForm({ title: item.title, content: item.content });
-                    setEditID(item.id);
-                    setModalOpen(true);
-                  }}
-                  className="bg-yellow-400 px-3 py-1 rounded hover:bg-yellow-500"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => handleDelete(item.id)}
-                  className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
-                >
-                  Hapus
-                </button>
-              </div>
-            )}
+        {/* Loading */}
+        {loading && (
+          <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+            Memuat data...
           </div>
-        ))}
+        )}
+
+        {/* Artikel List */}
+        {!loading && articles.length === 0 && (
+          <Card className="text-center py-12">
+            <BookOpen className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+            <p className="text-gray-500 dark:text-gray-400">Belum ada artikel</p>
+          </Card>
+        )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {articles.map((item) => (
+            <Card key={item.id} className="hover:shadow-xl transition-shadow">
+              <div className="flex items-start gap-2 mb-3">
+                <BookOpen className="w-5 h-5 text-green-600 mt-1 flex-shrink-0" />
+                <h2 className="font-semibold text-xl text-gray-800 dark:text-gray-100">
+                  {item.title}
+                </h2>
+              </div>
+              <p className="whitespace-pre-line text-gray-700 dark:text-gray-300 mb-4">
+                {item.content}
+              </p>
+
+              {parsed.role === "admin" && (
+                <div className="flex gap-2 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setForm({ title: item.title, content: item.content });
+                      setEditID(item.id);
+                      setModalOpen(true);
+                    }}
+                    className="bg-yellow-400 hover:bg-yellow-500 text-gray-800 border-yellow-400"
+                  >
+                    <Edit2 className="w-3 h-3 mr-1 inline" />
+                    Edit
+                  </Button>
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={() => handleDelete(item.id)}
+                  >
+                    <Trash2 className="w-3 h-3 mr-1 inline" />
+                    Hapus
+                  </Button>
+                </div>
+              )}
+            </Card>
+          ))}
+        </div>
       </div>
     </Layout>
   );
