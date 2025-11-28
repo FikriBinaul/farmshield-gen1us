@@ -17,7 +17,7 @@ import {
   orderBy,
 } from "firebase/firestore";
 import { uploadPhoto, validateImageFile } from "@/lib/uploadHelper";
-import { Image as ImageIcon, X } from "lucide-react";
+import { Image as ImageIcon, X, Youtube } from "lucide-react";
 
 export default function Podcast() {
   const cookie = Cookies.get("user");
@@ -32,6 +32,47 @@ export default function Podcast() {
   const [photo, setPhoto] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [urlError, setUrlError] = useState("");
+
+  const detectMediaType = (url) => {
+    if (!url) return "invalid";
+    const youTubeId = extractYouTubeId(url);
+    if (youTubeId) return "youtube";
+    try {
+      const parsed = new URL(url);
+      const audioExtensions = [".mp3", ".wav", ".ogg", ".m4a", ".aac"];
+      if (audioExtensions.some((ext) => parsed.pathname.endsWith(ext))) {
+        return "audio";
+      }
+      return "audio"; // fallback: allow general audio streams
+    } catch {
+      return "invalid";
+    }
+  };
+
+  const extractYouTubeId = (url) => {
+    try {
+      const parsed = new URL(url);
+      if (parsed.hostname.includes("youtu.be")) {
+        return parsed.pathname.slice(1);
+      }
+      if (parsed.hostname.includes("youtube.com")) {
+        if (parsed.searchParams.get("v")) return parsed.searchParams.get("v");
+        if (parsed.pathname.startsWith("/shorts/")) {
+          return parsed.pathname.split("/")[2];
+        }
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  };
+
+  const getYouTubeEmbedUrl = (url) => {
+    const videoId = extractYouTubeId(url);
+    if (!videoId) return url;
+    return `https://www.youtube.com/embed/${videoId}?rel=0`;
+  };
 
   // Listener realtime
   useEffect(() => {
@@ -88,6 +129,15 @@ export default function Podcast() {
   // Create or update
   const handleSubmit = async () => {
     if (!form.title || !form.url) return alert("Isi semua field!");
+
+    // Reset url error
+    setUrlError("");
+
+    const mediaType = detectMediaType(form.url);
+    if (mediaType === "invalid") {
+      setUrlError("URL tidak valid. Masukkan link audio langsung atau link YouTube.");
+      return;
+    }
 
     setUploadingPhoto(!!photo);
     let photoUrl = null;
@@ -190,9 +240,22 @@ export default function Podcast() {
                 </div>
               </div>
 
-              <audio controls className="w-full mt-3">
-                <source src={p.url} type="audio/mpeg" />
-              </audio>
+              {detectMediaType(p.url) === "youtube" ? (
+                <div className="mt-3 aspect-video">
+                  <iframe
+                    src={getYouTubeEmbedUrl(p.url)}
+                    title={p.title}
+                    className="w-full h-full rounded-lg border border-gray-200"
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                </div>
+              ) : (
+                <audio controls className="w-full mt-3">
+                  <source src={p.url} type="audio/mpeg" />
+                </audio>
+              )}
 
               {parsed.role === "admin" && (
                 <div className="flex gap-3 mt-3">
@@ -240,6 +303,11 @@ export default function Podcast() {
               onChange={(e) => setForm({ ...form, url: e.target.value })}
               className="w-full p-2 border rounded mb-3"
             />
+            {urlError && <p className="text-sm text-red-500 mb-2">{urlError}</p>}
+            <p className="text-xs text-gray-500 mb-4 flex items-center gap-1">
+              <Youtube className="w-4 h-4" />
+              Dukungan: link file audio langsung atau link YouTube (contoh: https://youtu.be/xxxx)
+            </p>
 
             {/* Photo Upload */}
             <div className="mb-4">
