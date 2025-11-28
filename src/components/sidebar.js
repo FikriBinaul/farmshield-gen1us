@@ -25,10 +25,6 @@ export default function Sidebar({ role = "user" }) {
     const checkMobile = () => {
       const mobile = window.innerWidth < 768;
       setIsMobile(mobile);
-      // Di mobile, default tutup sidebar
-      if (mobile && open) {
-        setOpen(false);
-      }
     };
     
     checkMobile();
@@ -76,12 +72,11 @@ export default function Sidebar({ role = "user" }) {
         backdrop-blur-md
         border-r border-green-700/50 dark:border-gray-700/50
         shadow-xl
-        transition-transform duration-300
+        transition-all duration-300
         ${isMobile 
-          ? (open ? "translate-x-0" : "-translate-x-full") 
+          ? (open ? "translate-x-0 w-64" : "-translate-x-full w-64") 
           : (open ? "w-64" : "w-20")
         }
-        ${isMobile ? "w-64" : ""}
         `}
       >
       {/* Wrapper Scrollable */}
@@ -115,7 +110,7 @@ export default function Sidebar({ role = "user" }) {
 
         {/* Logo */}
         <div className="flex items-center gap-3 px-4 py-6 border-b border-green-700/50 dark:border-gray-700/50">
-          <Sprout className="text-white" size={28} />
+          <Sprout className="text-white flex-shrink-0" size={28} />
           {open && (
             <h1 className="text-xl font-semibold tracking-wide text-white drop-shadow-lg">
               {role === "admin" ? "Admin Panel" : "User Panel"}
@@ -184,5 +179,6 @@ export default function Sidebar({ role = "user" }) {
         </button>
       </div>
     </aside>
+    </>
   );
 }
