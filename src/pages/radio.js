@@ -17,7 +17,7 @@ import {
   orderBy,
 } from "firebase/firestore";
 import { uploadPhoto, validateImageFile } from "@/lib/uploadHelper";
-import { Image as ImageIcon, X, Youtube } from "lucide-react";
+import { Image as ImageIcon, X, Youtube, Music } from "lucide-react";
 
 export default function Podcast() {
   const cookie = Cookies.get("user");
@@ -36,17 +36,49 @@ export default function Podcast() {
 
   const detectMediaType = (url) => {
     if (!url) return "invalid";
-    const youTubeId = extractYouTubeId(url);
-    if (youTubeId) return "youtube";
+    const cleanUrl = url.trim();
+    if (extractYouTubeId(cleanUrl)) return "youtube";
+    if (isSpotifyUrl(cleanUrl)) return "spotify";
+    if (isApplePodcastUrl(cleanUrl)) return "apple";
+    if (isNoiceUrl(cleanUrl)) return "noice";
+    if (isDirectAudioUrl(cleanUrl)) return "audio";
+    return "invalid";
+  };
+
+  const isDirectAudioUrl = (url) => {
     try {
       const parsed = new URL(url);
       const audioExtensions = [".mp3", ".wav", ".ogg", ".m4a", ".aac"];
-      if (audioExtensions.some((ext) => parsed.pathname.endsWith(ext))) {
-        return "audio";
-      }
-      return "audio"; // fallback: allow general audio streams
+      return audioExtensions.some((ext) => parsed.pathname.toLowerCase().endsWith(ext));
     } catch {
-      return "invalid";
+      return false;
+    }
+  };
+
+  const isSpotifyUrl = (url) => {
+    try {
+      const parsed = new URL(url);
+      return parsed.hostname.includes("spotify.com");
+    } catch {
+      return false;
+    }
+  };
+
+  const isApplePodcastUrl = (url) => {
+    try {
+      const parsed = new URL(url);
+      return parsed.hostname.includes("podcasts.apple.com");
+    } catch {
+      return false;
+    }
+  };
+
+  const isNoiceUrl = (url) => {
+    try {
+      const parsed = new URL(url);
+      return parsed.hostname.includes("noice.id");
+    } catch {
+      return false;
     }
   };
 
@@ -68,10 +100,98 @@ export default function Podcast() {
     }
   };
 
+  const getEmbedSrc = (url, type) => {
+    switch (type) {
+      case "youtube":
+        return getYouTubeEmbedUrl(url);
+      case "spotify":
+        return getSpotifyEmbedUrl(url);
+      case "apple":
+        return getAppleEmbedUrl(url);
+      case "noice":
+        return getNoiceEmbedUrl(url);
+      default:
+        return url;
+    }
+  };
+
   const getYouTubeEmbedUrl = (url) => {
     const videoId = extractYouTubeId(url);
     if (!videoId) return url;
-    return `https://www.youtube.com/embed/${videoId}?rel=0`;
+    return `https://www.youtube.com/embed/${videoId}?rel=0&controls=1`;
+  };
+
+  const getSpotifyEmbedUrl = (url) => {
+    try {
+      const parsed = new URL(url);
+      const basePath = parsed.pathname;
+      return `https://open.spotify.com/embed${basePath}${parsed.search || ""}`;
+    } catch {
+      return url;
+    }
+  };
+
+  const getAppleEmbedUrl = (url) => {
+    try {
+      const parsed = new URL(url);
+      return `https://embed.podcasts.apple.com${parsed.pathname}${parsed.search || ""}`;
+    } catch {
+      return url;
+    }
+  };
+
+  const getNoiceEmbedUrl = (url) => {
+    try {
+      const parsed = new URL(url);
+      // Noice belum memiliki dokumentasi embed resmi, fallback coba format embed
+      if (parsed.pathname.startsWith("/content/")) {
+        return `https://open.noice.id/embed${parsed.pathname}`;
+      }
+      return url;
+    } catch {
+      return url;
+    }
+  };
+
+  const renderPlayer = (podcast) => {
+    const type = detectMediaType(podcast.url);
+    if (type === "invalid") {
+      return (
+        <div className="p-4 bg-red-50 border border-red-200 rounded text-red-600 text-sm">
+          Link audio tidak valid. Edit podcast untuk memperbarui URL.
+        </div>
+      );
+    }
+
+    if (type === "audio") {
+      return (
+        <audio controls className="w-full mt-3" preload="metadata">
+          <source src={podcast.url} />
+          Browser tidak mendukung pemutar audio.
+        </audio>
+      );
+    }
+
+    const src = getEmbedSrc(podcast.url, type);
+    const heightMap = {
+      youtube: 200,
+      spotify: 232,
+      apple: 200,
+      noice: 200,
+    };
+
+    return (
+      <div className="mt-3">
+        <iframe
+          src={src}
+          title={podcast.title}
+          className="w-full rounded-lg border border-gray-200"
+          style={{ height: heightMap[type] || 200 }}
+          allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+          loading="lazy"
+        />
+      </div>
+    );
   };
 
   // Listener realtime
@@ -135,7 +255,7 @@ export default function Podcast() {
 
     const mediaType = detectMediaType(form.url);
     if (mediaType === "invalid") {
-      setUrlError("URL tidak valid. Masukkan link audio langsung atau link YouTube.");
+      setUrlError("URL tidak valid. Gunakan link audio langsung atau link dari YouTube, Spotify, Apple Podcasts, atau Noice.");
       return;
     }
 
@@ -240,22 +360,7 @@ export default function Podcast() {
                 </div>
               </div>
 
-              {detectMediaType(p.url) === "youtube" ? (
-                <div className="mt-3 aspect-video">
-                  <iframe
-                    src={getYouTubeEmbedUrl(p.url)}
-                    title={p.title}
-                    className="w-full h-full rounded-lg border border-gray-200"
-                    frameBorder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  />
-                </div>
-              ) : (
-                <audio controls className="w-full mt-3">
-                  <source src={p.url} type="audio/mpeg" />
-                </audio>
-              )}
+              {renderPlayer(p)}
 
               {parsed.role === "admin" && (
                 <div className="flex gap-3 mt-3">
@@ -304,9 +409,9 @@ export default function Podcast() {
               className="w-full p-2 border rounded mb-3"
             />
             {urlError && <p className="text-sm text-red-500 mb-2">{urlError}</p>}
-            <p className="text-xs text-gray-500 mb-4 flex items-center gap-1">
-              <Youtube className="w-4 h-4" />
-              Dukungan: link file audio langsung atau link YouTube (contoh: https://youtu.be/xxxx)
+            <p className="text-xs text-gray-500 mb-4 flex items-center gap-2">
+              <Music className="w-4 h-4" />
+              Dukungan: link audio langsung, YouTube, Spotify, Apple Podcasts, atau Noice
             </p>
 
             {/* Photo Upload */}
