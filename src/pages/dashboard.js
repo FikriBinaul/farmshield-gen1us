@@ -5,15 +5,9 @@ import { db } from "@/lib/firebase";
 import AdminLayout from "@/layouts/adminlayout";
 import {
   collection,
-  getDocs,
   onSnapshot,
-  deleteDoc,
-  updateDoc,
-  addDoc,
-  doc,
   query,
   orderBy,
-  where,
 } from "firebase/firestore";
 import {
   LineChart,
@@ -38,9 +32,6 @@ export default function Dashboard() {
   const router = useRouter();
   const [user, setUser] = useState(null);
 
-  // USER LIST
-  const [users, setUsers] = useState([]);
-  const [newUser, setNewUser] = useState({ name: "", email: "", password: "" });
 
   // DETECTION STATS
   const [stats, setStats] = useState({
@@ -81,13 +72,6 @@ export default function Dashboard() {
     }
   }, []);
 
-  // =====================================
-  // LOAD LIST USERS
-  // =====================================
-  const loadUsers = async () => {
-    const snapshot = await getDocs(collection(db, "users"));
-    setUsers(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })));
-  };
 
   // =====================================
   // REALTIME DETECTION LISTENER
@@ -158,37 +142,6 @@ export default function Dashboard() {
     setChartData(chartArr);
   };
 
-  // =====================================
-  // CRUD USERS
-  // =====================================
-  const handleCreate = async (e) => {
-    e.preventDefault();
-    if (!newUser.name || !newUser.email || !newUser.password)
-      return alert("Lengkapi semua field!");
-
-    await addDoc(collection(db, "users"), {
-      name: newUser.name,
-      email: newUser.email,
-      password: newUser.password,
-      createdAt: new Date(),
-    });
-
-    setNewUser({ name: "", email: "", password: "" });
-    loadUsers();
-  };
-
-  const handleEdit = async (id) => {
-    const newName = prompt("Masukkan nama baru:");
-    if (!newName) return;
-    await updateDoc(doc(db, "users", id), { name: newName });
-    loadUsers();
-  };
-
-  const handleDelete = async (id) => {
-    if (!confirm("Yakin mau hapus user ini?")) return;
-    await deleteDoc(doc(db, "users", id));
-    loadUsers();
-  };
 
   const handleLogout = async () => {
     await fetch("/api/logout");
@@ -196,9 +149,6 @@ export default function Dashboard() {
     router.push("/login");
   };
 
-  useEffect(() => {
-    loadUsers();
-  }, []);
 
 
   const formatNumber = (num) => {
@@ -287,74 +237,6 @@ export default function Dashboard() {
           </ResponsiveContainer>
         </Card>
 
-        {/* USER TABLE */}
-        <Card>
-          <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-100">
-            Kelola User
-          </h3>
-          
-          <form onSubmit={handleCreate} className="mb-6 flex flex-wrap gap-3">
-            <input
-              type="text"
-              placeholder="Nama"
-              className="border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 p-2 rounded-lg w-40 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              value={newUser.name}
-              onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
-            />
-            <input
-              type="email"
-              placeholder="Email"
-              className="border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 p-2 rounded-lg w-56 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              value={newUser.email}
-              onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-            />
-            <input
-              type="password"
-              placeholder="Password"
-              className="border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 p-2 rounded-lg w-40 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              value={newUser.password}
-              onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-            />
-            <Button variant="success" type="submit">
-              Tambah User
-            </Button>
-          </form>
-
-          <Table>
-            <TableHeader>
-              <TableHeaderCell>Nama</TableHeaderCell>
-              <TableHeaderCell>Email</TableHeaderCell>
-              <TableHeaderCell className="text-right">Aksi</TableHeaderCell>
-            </TableHeader>
-            <TableBody>
-              {users.map((u) => (
-                <TableRow key={u.id}>
-                  <TableCell className="font-medium">{u.name}</TableCell>
-                  <TableCell>{u.email}</TableCell>
-                  <TableCell>
-                    <div className="flex gap-2 justify-end">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleEdit(u.id)}
-                        className="bg-yellow-400 hover:bg-yellow-500 text-gray-800 border-yellow-400"
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        variant="danger"
-                        size="sm"
-                        onClick={() => handleDelete(u.id)}
-                      >
-                        Hapus
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Card>
       </div>
     </AdminLayout>
   );

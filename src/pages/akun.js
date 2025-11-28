@@ -9,9 +9,11 @@ import {
   getDocs,
   updateDoc,
   deleteDoc,
+  addDoc,
   doc,
   query,
   orderBy,
+  serverTimestamp,
 } from "firebase/firestore";
 
 /**
@@ -78,6 +80,7 @@ export default function Akun() {
 
   const [confirmDelete, setConfirmDelete] = useState({ open: false, id: null, name: "" });
   const [resetModal, setResetModal] = useState({ open: false, id: null, name: "", newPassword: "" });
+  const [createModal, setCreateModal] = useState({ open: false, name: "", email: "", password: "", role: "user" });
 
   const [toast, setToast] = useState("");
   const toastTimer = useRef(null);
@@ -215,6 +218,39 @@ export default function Akun() {
     }
   };
 
+  // Create new user
+  const handleCreateUser = async () => {
+    const { name, email, password, role } = createModal;
+    if (!name || !email || !password) {
+      return showToast("Lengkapi semua field!");
+    }
+    if (password.length < 6) {
+      return showToast("Password minimal 6 karakter");
+    }
+    
+    // Check if email already exists
+    const emailExists = accounts.some(a => a.email === email);
+    if (emailExists) {
+      return showToast("Email sudah terdaftar");
+    }
+
+    try {
+      await addDoc(collection(db, "users"), {
+        name: name.trim(),
+        email: email.trim(),
+        password: password,
+        role: role || "user",
+        createdAt: serverTimestamp(),
+      });
+      showToast("User berhasil ditambahkan");
+      setCreateModal({ open: false, name: "", email: "", password: "", role: "user" });
+      loadAccounts();
+    } catch (err) {
+      console.error("Create user error", err);
+      showToast("Gagal menambahkan user");
+    }
+  };
+
   // Export CSV
   const exportCSV = () => {
     if (!accounts.length) return showToast("Tidak ada data untuk diexport");
@@ -250,18 +286,28 @@ export default function Akun() {
           </div>
 
           <div className="flex gap-2">
+            {parsedUser.role === "admin" && (
+              <button
+                onClick={() => setCreateModal({ open: true, name: "", email: "", password: "", role: "user" })}
+                className="px-3 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
+              >
+                + Tambah User
+              </button>
+            )}
             <button
               onClick={loadAccounts}
               className="px-3 py-2 rounded border hover:bg-gray-50"
             >
               Refresh
             </button>
-            <button
-              onClick={exportCSV}
-              className="px-3 py-2 rounded bg-green-700 text-white hover:bg-green-800"
-            >
-              Export CSV
-            </button>
+            {parsedUser.role === "admin" && (
+              <button
+                onClick={exportCSV}
+                className="px-3 py-2 rounded bg-green-700 text-white hover:bg-green-800"
+              >
+                Export CSV
+              </button>
+            )}
           </div>
         </div>
 
@@ -427,6 +473,59 @@ export default function Akun() {
             <div className="flex justify-end gap-2">
               <button className="px-3 py-1 border rounded" onClick={() => setResetModal({ open: false, id: null, name: "", newPassword: "" })}>Batal</button>
               <button className="px-3 py-1 bg-green-700 text-white rounded" onClick={performResetPassword}>Reset</button>
+            </div>
+          </div>
+        </Modal>
+
+        {/* Create User Modal */}
+        <Modal
+          open={createModal.open}
+          title="Tambah User Baru"
+          onClose={() => setCreateModal({ open: false, name: "", email: "", password: "", role: "user" })}
+        >
+          <div className="space-y-3">
+            <input
+              type="text"
+              placeholder="Nama"
+              value={createModal.name}
+              onChange={(e) => setCreateModal(prev => ({ ...prev, name: e.target.value }))}
+              className="w-full p-2 border rounded"
+            />
+            <input
+              type="email"
+              placeholder="Email"
+              value={createModal.email}
+              onChange={(e) => setCreateModal(prev => ({ ...prev, email: e.target.value }))}
+              className="w-full p-2 border rounded"
+            />
+            <input
+              type="password"
+              placeholder="Password (min 6 karakter)"
+              value={createModal.password}
+              onChange={(e) => setCreateModal(prev => ({ ...prev, password: e.target.value }))}
+              className="w-full p-2 border rounded"
+            />
+            <select
+              value={createModal.role}
+              onChange={(e) => setCreateModal(prev => ({ ...prev, role: e.target.value }))}
+              className="w-full p-2 border rounded"
+            >
+              <option value="user">User</option>
+              <option value="admin">Admin</option>
+            </select>
+            <div className="flex justify-end gap-2 mt-4">
+              <button
+                className="px-3 py-1 border rounded"
+                onClick={() => setCreateModal({ open: false, name: "", email: "", password: "", role: "user" })}
+              >
+                Batal
+              </button>
+              <button
+                className="px-3 py-1 bg-green-700 text-white rounded"
+                onClick={handleCreateUser}
+              >
+                Tambah
+              </button>
             </div>
           </div>
         </Modal>
