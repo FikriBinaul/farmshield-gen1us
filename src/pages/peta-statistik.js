@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import Cookies from "js-cookie";
 import { useRouter } from "next/router";
+import dynamic from "next/dynamic";
 import UserLayout from "@/layouts/userlayout";
 import AdminLayout from "@/layouts/adminlayout";
 import {
@@ -20,6 +21,16 @@ import {
 } from "recharts";
 import { MapPin, TrendingUp, Package, ShoppingCart, Leaf } from "lucide-react";
 
+// Dynamic import untuk peta (client-side only)
+const IndonesiaMap = dynamic(() => import("@/components/IndonesiaMap"), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-900 rounded-lg">
+      <div className="text-gray-600 dark:text-gray-400">Memuat peta...</div>
+    </div>
+  ),
+});
+
 export default function PetaStatistik() {
   const router = useRouter();
   const [user, setUser] = useState(null);
@@ -33,49 +44,56 @@ export default function PetaStatistik() {
       konsumsi: 380000,
       distribusi: 420000,
       hasilPanen: 12500,
-      koordinat: { x: 52, y: 48 },
+      lat: -6.9175,
+      lng: 107.6191,
     },
     "Jawa Tengah": {
       produksi: 380000,
       konsumsi: 320000,
       distribusi: 360000,
       hasilPanen: 9800,
-      koordinat: { x: 50, y: 52 },
+      lat: -7.0245,
+      lng: 110.1875,
     },
     "Jawa Timur": {
       produksi: 520000,
       konsumsi: 450000,
       distribusi: 480000,
       hasilPanen: 15200,
-      koordinat: { x: 55, y: 52 },
+      lat: -7.5361,
+      lng: 112.2384,
     },
     "Sumatera Utara": {
       produksi: 280000,
       konsumsi: 240000,
       distribusi: 260000,
       hasilPanen: 7200,
-      koordinat: { x: 48, y: 28 },
+      lat: 3.5952,
+      lng: 98.6722,
     },
     "Sumatera Selatan": {
       produksi: 220000,
       konsumsi: 190000,
       distribusi: 210000,
       hasilPanen: 5800,
-      koordinat: { x: 52, y: 38 },
+      lat: -3.3194,
+      lng: 103.9144,
     },
     "Sulawesi Selatan": {
       produksi: 180000,
       konsumsi: 150000,
       distribusi: 170000,
       hasilPanen: 4200,
-      koordinat: { x: 58, y: 48 },
+      lat: -5.1477,
+      lng: 119.4327,
     },
     "Bali": {
       produksi: 95000,
       konsumsi: 85000,
       distribusi: 90000,
       hasilPanen: 2800,
-      koordinat: { x: 53, y: 56 },
+      lat: -8.3405,
+      lng: 115.0920,
     },
   };
 
@@ -222,65 +240,18 @@ export default function PetaStatistik() {
 
         {/* Peta dan Statistik Daerah */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          {/* Peta Indonesia Sederhana */}
+          {/* Peta Indonesia dengan Leaflet */}
           <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
             <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-100">Peta Indonesia</h2>
             <div className="relative bg-gray-50 dark:bg-gray-900 rounded-lg overflow-hidden" style={{ height: "500px" }}>
-              {/* Peta sederhana dengan kotak-kotak representasi daerah */}
-              <svg viewBox="0 0 120 80" className="w-full h-full" style={{ background: "linear-gradient(135deg, #e0f2fe 0%, #f0fdf4 100%)" }}>
-                {/* Background Indonesia */}
-                <rect x="0" y="0" width="120" height="80" fill="rgba(16, 185, 129, 0.1)" />
-                
-                {/* Representasi Pulau-pulau */}
-                {/* Sumatera */}
-                <rect x="10" y="20" width="50" height="25" fill="#10b981" opacity="0.6" rx="2" />
-                
-                {/* Jawa */}
-                <rect x="45" y="45" width="55" height="8" fill="#3b82f6" opacity="0.6" rx="1" />
-                
-                {/* Kalimantan */}
-                <rect x="25" y="30" width="35" height="28" fill="#f59e0b" opacity="0.6" rx="2" />
-                
-                {/* Sulawesi */}
-                <rect x="70" y="40" width="20" height="30" fill="#ef4444" opacity="0.6" rx="2" />
-                
-                {/* Papua */}
-                <rect x="95" y="15" width="20" height="50" fill="#8b5cf6" opacity="0.6" rx="2" />
-                
-                {/* Marker untuk setiap daerah */}
-                {Object.entries(regionData).map(([region, data]) => (
-                  <g key={region}>
-                    <circle
-                      cx={data.koordinat.x}
-                      cy={data.koordinat.y}
-                      r={selectedRegion === region ? "4" : "3"}
-                      fill={selectedRegion === region ? "#ef4444" : "#10b981"}
-                      stroke="white"
-                      strokeWidth="2"
-                      style={{ cursor: "pointer" }}
-                      onClick={() => handleRegionClick(region)}
-                      onMouseEnter={() => {}}
-                      className="hover:r-4 transition-all"
-                    />
-                    {selectedRegion === region && (
-                      <text
-                        x={data.koordinat.x}
-                        y={data.koordinat.y - 8}
-                        textAnchor="middle"
-                        fill="#1f2937"
-                        fontSize="2"
-                        fontWeight="bold"
-                        className="pointer-events-none"
-                      >
-                        {region}
-                      </text>
-                    )}
-                  </g>
-                ))}
-              </svg>
-
+              <IndonesiaMap
+                regionData={regionData}
+                selectedRegion={selectedRegion}
+                onRegionClick={handleRegionClick}
+              />
+              
               {/* Legenda */}
-              <div className="absolute bottom-4 left-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 border border-gray-200 dark:border-gray-700">
+              <div className="absolute bottom-4 left-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 border border-gray-200 dark:border-gray-700 z-[1000]">
                 <h4 className="text-sm font-semibold mb-2 text-gray-800 dark:text-gray-100">Legenda</h4>
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
