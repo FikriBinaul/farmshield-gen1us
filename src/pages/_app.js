@@ -4,6 +4,7 @@ import { DarkModeProvider } from "@/contexts/DarkModeContext";
 import LeafAnimation from "@/components/LeafAnimation";
 import GlobalLoading from "@/components/LoadingScreen";
 import "@/styles/globals.css";
+import "leaflet/dist/leaflet.css";
 
 
 export default function App({ Component, pageProps }) {

@@ -1,47 +1,16 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import dynamic from "next/dynamic";
-
-// Import Leaflet CSS
-if (typeof window !== "undefined") {
-  require("leaflet/dist/leaflet.css");
-}
-
-// Dynamic import untuk Leaflet (client-side only)
-const MapContainer = dynamic(() => import("react-leaflet").then(mod => mod.MapContainer), { ssr: false });
-const TileLayer = dynamic(() => import("react-leaflet").then(mod => mod.TileLayer), { ssr: false });
-const GeoJSON = dynamic(() => import("react-leaflet").then(mod => mod.GeoJSON), { ssr: false });
-const Marker = dynamic(() => import("react-leaflet").then(mod => mod.Marker), { ssr: false });
-const Popup = dynamic(() => import("react-leaflet").then(mod => mod.Popup), { ssr: false });
+import { useEffect, useState } from "react";
 
 export default function IndonesiaMap({ regionData, selectedRegion, onRegionClick }) {
   const [geoJsonData, setGeoJsonData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [leafletLoaded, setLeafletLoaded] = useState(false);
-  const mapRef = useRef(null);
+  const [error, setError] = useState(null);
+  const [leafletModules, setLeafletModules] = useState(null);
 
   // Koordinat pusat Indonesia dan zoom level
   const center = [-2.5, 118.0];
   const zoom = 5;
-
-  // Load Leaflet dan fix icon marker
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      import("leaflet").then((L) => {
-        // Fix untuk icon marker default Leaflet
-        delete L.default.Icon.Default.prototype._getIconUrl;
-        L.default.Icon.Default.mergeOptions({
-          iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
-          iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png",
-          shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
-        });
-        // Simpan ke window untuk akses global
-        window.L = L.default;
-        setLeafletLoaded(true);
-      });
-    }
-  }, []);
 
   // Koordinat provinsi di Indonesia (lat, lng)
   const provinceCoordinates = {
@@ -54,27 +23,85 @@ export default function IndonesiaMap({ regionData, selectedRegion, onRegionClick
     "Bali": [-8.3405, 115.0920],
   };
 
+  // Load Leaflet modules dan fix icon
+  useEffect(() => {
+    const loadLeaflet = async () => {
+      try {
+        // Import semua modul sekaligus
+        const reactLeaflet = await import("react-leaflet");
+        const L = await import("leaflet");
+
+        // Fix icon marker
+        if (L.default?.Icon?.Default) {
+          delete L.default.Icon.Default.prototype._getIconUrl;
+          L.default.Icon.Default.mergeOptions({
+            iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png",
+            iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png",
+            shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
+          });
+        }
+
+        // Simpan ke window untuk akses global
+        if (typeof window !== "undefined") {
+          window.L = L.default;
+        }
+
+        setLeafletModules({
+          MapContainer: reactLeaflet.MapContainer,
+          TileLayer: reactLeaflet.TileLayer,
+          GeoJSON: reactLeaflet.GeoJSON,
+          Marker: reactLeaflet.Marker,
+          Popup: reactLeaflet.Popup,
+          L: L.default,
+        });
+      } catch (err) {
+        console.error("Error loading Leaflet:", err);
+        setError("Gagal memuat library peta: " + err.message);
+        setLoading(false);
+      }
+    };
+
+    if (typeof window !== "undefined") {
+      loadLeaflet();
+    }
+  }, []);
+
   // Load GeoJSON peta Indonesia dari API
   useEffect(() => {
     const loadGeoJSON = async () => {
       try {
-        // Menggunakan API GeoJSON Indonesia dari CDN
-        const response = await fetch("https://raw.githubusercontent.com/superpikar/indonesia-geojson/master/indonesia-province-simple.geojson");
-        
-        if (!response.ok) {
-          throw new Error("Failed to fetch GeoJSON");
+        // Coba beberapa sumber GeoJSON
+        const sources = [
+          "https://raw.githubusercontent.com/superpikar/indonesia-geojson/master/indonesia-province-simple.geojson",
+          "https://raw.githubusercontent.com/ans-4175/peta-indonesia-geojson/master/indonesia.geojson",
+        ];
+
+        let data = null;
+        for (const source of sources) {
+          try {
+            const response = await fetch(source);
+            if (response.ok) {
+              data = await response.json();
+              break;
+            }
+          } catch (e) {
+            continue;
+          }
         }
-        
-        const data = await response.json();
+
+        if (!data) {
+          // Fallback: buat GeoJSON minimal
+          data = {
+            type: "FeatureCollection",
+            features: [],
+          };
+        }
+
         setGeoJsonData(data);
         setLoading(false);
       } catch (error) {
         console.error("Error loading GeoJSON:", error);
-        // Fallback: buat GeoJSON sederhana jika API gagal
-        setGeoJsonData({
-          type: "FeatureCollection",
-          features: [],
-        });
+        setError("Gagal memuat data peta");
         setLoading(false);
       }
     };
@@ -84,7 +111,7 @@ export default function IndonesiaMap({ regionData, selectedRegion, onRegionClick
 
   // Styling untuk setiap feature (provinsi)
   const getStyle = (feature) => {
-    const provinceName = feature?.properties?.name || feature?.properties?.NAME_1 || "";
+    const provinceName = feature?.properties?.name || feature?.properties?.NAME_1 || feature?.properties?.PROVINSI || "";
     const isSelected = Object.keys(regionData).some(
       (key) => key === provinceName || provinceName.includes(key) || key.includes(provinceName)
     );
@@ -101,7 +128,7 @@ export default function IndonesiaMap({ regionData, selectedRegion, onRegionClick
 
   // Event handler untuk klik pada provinsi
   const onEachFeature = (feature, layer) => {
-    const provinceName = feature?.properties?.name || feature?.properties?.NAME_1 || "";
+    const provinceName = feature?.properties?.name || feature?.properties?.NAME_1 || feature?.properties?.PROVINSI || "";
     
     // Cari nama provinsi yang cocok dengan data kita
     const matchingRegion = Object.keys(regionData).find(
@@ -147,30 +174,39 @@ export default function IndonesiaMap({ regionData, selectedRegion, onRegionClick
     }
   };
 
-  if (loading) {
+  // Loading state - hanya menunggu leaflet modules, GeoJSON bisa load kemudian
+  if (!leafletModules) {
     return (
       <div className="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-900 rounded-lg">
-        <div className="text-gray-600 dark:text-gray-400">Memuat peta Indonesia...</div>
+        <div className="text-center">
+          <div className="text-gray-600 dark:text-gray-400 mb-2">Memuat peta Indonesia...</div>
+          <div className="w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+        </div>
       </div>
     );
   }
 
-  if (!geoJsonData) {
+  // Error state
+  if (error) {
     return (
       <div className="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-900 rounded-lg">
-        <div className="text-red-600">Gagal memuat peta. Silakan refresh halaman.</div>
+        <div className="text-red-600 text-center p-4">
+          <p className="font-semibold mb-2">{error}</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400">Silakan refresh halaman atau coba lagi nanti.</p>
+        </div>
       </div>
     );
   }
+
+  const { MapContainer, TileLayer, GeoJSON, Marker, Popup } = leafletModules;
 
   return (
-    <div className="w-full h-full rounded-lg overflow-hidden">
+    <div className="w-full h-full rounded-lg overflow-hidden relative">
       <MapContainer
         center={center}
         zoom={zoom}
-        style={{ height: "100%", width: "100%" }}
+        style={{ height: "100%", width: "100%", zIndex: 0 }}
         scrollWheelZoom={true}
-        className="z-0"
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -178,7 +214,7 @@ export default function IndonesiaMap({ regionData, selectedRegion, onRegionClick
         />
         
         {/* Render GeoJSON peta Indonesia */}
-        {geoJsonData && (
+        {geoJsonData && geoJsonData.features && geoJsonData.features.length > 0 && (
           <GeoJSON
             data={geoJsonData}
             style={getStyle}
@@ -187,50 +223,40 @@ export default function IndonesiaMap({ regionData, selectedRegion, onRegionClick
         )}
 
         {/* Render marker untuk setiap daerah dengan data */}
-        {leafletLoaded && Object.entries(regionData).map(([region, data]) => {
+        {Object.entries(regionData).map(([region, data]) => {
           const coords = provinceCoordinates[region];
           if (!coords) return null;
 
           const isSelected = selectedRegion === region;
           
-          // Use divIcon for custom markers
-          const createDivIcon = () => {
-            if (typeof window === "undefined" || !window.L) return null;
-            
-            const color = isSelected ? "#ef4444" : "#10b981";
-            const size = isSelected ? 32 : 28;
-            
-            return window.L.divIcon({
-              className: "custom-marker",
-              html: `
+          // Create custom icon
+          const customIcon = window.L?.divIcon({
+            className: "custom-marker",
+            html: `
+              <div style="
+                width: ${isSelected ? 32 : 28}px;
+                height: ${isSelected ? 32 : 28}px;
+                border-radius: 50%;
+                background-color: ${isSelected ? "#ef4444" : "#10b981"};
+                border: 3px solid white;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+              ">
                 <div style="
-                  width: ${size}px;
-                  height: ${size}px;
+                  width: ${(isSelected ? 32 : 28) * 0.4}px;
+                  height: ${(isSelected ? 32 : 28) * 0.4}px;
                   border-radius: 50%;
-                  background-color: ${color};
-                  border: 3px solid white;
-                  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                  cursor: pointer;
-                ">
-                  <div style="
-                    width: ${size * 0.4}px;
-                    height: ${size * 0.4}px;
-                    border-radius: 50%;
-                    background-color: white;
-                  "></div>
-                </div>
-              `,
-              iconSize: [size, size],
-              iconAnchor: [size / 2, size],
-              popupAnchor: [0, -size],
-            });
-          };
-
-          const customIcon = createDivIcon();
-          if (!customIcon) return null;
+                  background-color: white;
+                "></div>
+              </div>
+            `,
+            iconSize: [isSelected ? 32 : 28, isSelected ? 32 : 28],
+            iconAnchor: [isSelected ? 16 : 14, isSelected ? 32 : 28],
+            popupAnchor: [0, isSelected ? -32 : -28],
+          });
 
           return (
             <Marker
@@ -270,7 +296,21 @@ export default function IndonesiaMap({ regionData, selectedRegion, onRegionClick
           );
         })}
       </MapContainer>
+
+      {/* Legenda */}
+      <div className="absolute bottom-4 left-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 border border-gray-200 dark:border-gray-700 z-[1000]">
+        <h4 className="text-sm font-semibold mb-2 text-gray-800 dark:text-gray-100">Legenda</h4>
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-green-500 rounded-full"></div>
+            <span className="text-xs text-gray-600 dark:text-gray-400">Daerah Produksi</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-red-500 rounded-full"></div>
+            <span className="text-xs text-gray-600 dark:text-gray-400">Daerah Terpilih</span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
-
