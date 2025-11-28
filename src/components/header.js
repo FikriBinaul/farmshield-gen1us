@@ -21,7 +21,6 @@ export default function Header() {
         <nav className="hidden md:flex gap-6 items-center">
           <a href="/" className="hover:text-green-600 dark:hover:text-green-400 dark:text-gray-300">Home</a>
           <a href="/forum" className="hover:text-green-600 dark:hover:text-green-400 dark:text-gray-300">Forum</a>
-          <a href="/about" className="hover:text-green-600 dark:hover:text-green-400 dark:text-gray-300">About</a>
 
           {/* Search bar */}
           <div className="relative">
@@ -53,10 +52,7 @@ export default function Header() {
       >
         <nav className="flex flex-col gap-4 glass-card p-4 border-t border-white/10 dark:border-gray-700/30">
           <a href="/" className="hover:text-green-600 dark:hover:text-green-400 dark:text-gray-300">Home</a>
-          <a href="/products" className="hover:text-green-600 dark:hover:text-green-400 dark:text-gray-300">Products</a>
           <a href="/forum" className="hover:text-green-600 dark:hover:text-green-400 dark:text-gray-300">Forum</a>
-          <a href="/about" className="hover:text-green-600 dark:hover:text-green-400 dark:text-gray-300">About</a>
-
           {/* Search Mobile */}
           <div className="relative">
             <input

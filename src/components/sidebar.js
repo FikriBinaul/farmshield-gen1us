@@ -10,6 +10,7 @@ import {
   ChevronLeft,
   ChevronRight,
   MessageCircle,
+  Map,
 } from "lucide-react";
 import { useSidebar } from "@/contexts/SidebarContext";
 
@@ -24,6 +25,7 @@ export default function Sidebar({ role = "user" }) {
       path: role === "admin" ? "/dashboard" : "/dashboard-user",
     },
     { name: "Deteksi Kutu Putih", icon: Sprout, path: "/deteksi" },
+    { name: "Peta Statistik", icon: Map, path: "/peta-statistik" },
     { name: "Forum", icon: Users, path: "/forum" },
     { name: "Radio Petani", icon: Radio, path: "/radio" },
     { name: "Ensiklopedia", icon: BookOpen, path: "/ensiklopedia" },

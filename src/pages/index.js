@@ -1,6 +1,7 @@
 import { useRouter } from "next/router";
 import { Sprout, Camera, BookOpen, Users, Radio, BarChart3, Scan } from "lucide-react";
 import dynamic from "next/dynamic";
+import LandingHeader from "@/components/LandingHeader";
 
 // Dynamic import untuk Three.js components (client-only, no SSR)
 const FarmShield3DModel = dynamic(
@@ -20,9 +21,10 @@ export default function Home() {
 
   return (
     <div className="bg-gray-50 text-gray-800">
+      <LandingHeader />
 
     {/* ======================= HERO SECTION (VIDEO + OVERLAY) ======================= */}
-    <section className="relative min-h-screen flex items-center justify-between px-8 md:px-16 text-white overflow-hidden">
+    <section className="relative min-h-screen flex items-center justify-between px-8 md:px-16 text-white overflow-hidden pt-20">
     
       {/* VIDEO BACKGROUND */}
       <video
