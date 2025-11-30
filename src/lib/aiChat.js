@@ -4,10 +4,7 @@ const GEMINI_API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY || "AIzaSyD_x6hQ6l
 
 // Daftar model yang akan dicoba (dari yang terbaru dan pasti tersedia)
 const GEMINI_MODELS = [
-  "gemini-2.0-flash",      // Model terbaru (2024)
-  "gemini-1.5-flash",      // Model stabil yang pasti tersedia
-  "gemini-1.5-pro",        // Alternatif jika flash tidak tersedia
-  "gemini-pro"              // Fallback (mungkin deprecated tapi tetap dicoba)
+  "gemini-2.0-flash",      // Model terbaru (2024)             // Fallback (mungkin deprecated tapi tetap dicoba)
 ];
 
 // Base URL untuk Gemini API - gunakan v1beta untuk model terbaru
