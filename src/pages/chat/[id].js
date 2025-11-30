@@ -150,11 +150,23 @@ export default function ChatRoom() {
         localStorage.setItem(`ai-chat-${sender}`, JSON.stringify(updatedMessages));
       } catch (error) {
         console.error("Error getting AI response:", error);
+        let errorText = "Maaf, terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi.";
+        
+        // Berikan pesan error yang lebih spesifik
+        if (error.message?.includes("not found")) {
+          errorText = "Model AI tidak tersedia. Silakan hubungi administrator.";
+        } else if (error.message?.includes("API error")) {
+          errorText = "Terjadi kesalahan pada API. Silakan coba lagi dalam beberapa saat.";
+        } else if (error.message) {
+          errorText = `Error: ${error.message}`;
+        }
+        
         const errorMessage = {
           id: `ai-error-${Date.now()}`,
           sender: "ai-assistant",
-          text: "Maaf, terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi.",
+          text: errorText,
           timestamp: new Date(),
+          isError: true,
         };
         const updatedMessages = [...newMessages, errorMessage];
         setMessages(updatedMessages);
@@ -221,6 +233,7 @@ export default function ChatRoom() {
         {messages.map((msg) => {
           const isMe = msg.sender === sender;
           const isAI = msg.sender === "ai-assistant";
+          const isError = msg.isError;
           return (
             <div
               key={msg.id}
@@ -231,16 +244,24 @@ export default function ChatRoom() {
                   ${isMe 
                     ? "bg-blue-600 text-white rounded-br-none" 
                     : isAI 
-                    ? "bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-bl-none" 
+                    ? isError
+                      ? "bg-red-50 border border-red-200 rounded-bl-none"
+                      : "bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-bl-none" 
                     : "bg-white border rounded-bl-none"}`}
               >
                 {isAI && (
                   <div className="flex items-center gap-2 mb-1">
-                    <Bot className="w-4 h-4 text-green-600" />
-                    <span className="text-xs font-semibold text-green-700">AI Assistant</span>
+                    <Bot className={`w-4 h-4 ${isError ? 'text-red-600' : 'text-green-600'}`} />
+                    <span className={`text-xs font-semibold ${isError ? 'text-red-700' : 'text-green-700'}`}>
+                      {isError ? 'Error' : 'AI Assistant'}
+                    </span>
                   </div>
                 )}
-                {msg.text && <p className={`text-sm whitespace-pre-wrap ${isAI ? 'text-gray-800' : ''}`}>{msg.text}</p>}
+                {msg.text && (
+                  <p className={`text-sm whitespace-pre-wrap ${isAI ? (isError ? 'text-red-800' : 'text-gray-800') : ''}`}>
+                    {String(msg.text || '')}
+                  </p>
+                )}
                 {msg.photoUrl && (
                   <div className="mt-2">
                     <img
