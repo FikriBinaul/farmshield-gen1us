@@ -7,9 +7,10 @@ import useSWR from "swr";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import PageHeader from "@/components/ui/PageHeader";
-import { Camera, AlertCircle } from "lucide-react";
+import { Camera, AlertCircle, CheckCircle, XCircle, History } from "lucide-react";
 import { realtimedb } from "@/lib/firebase";
-import { ref, set } from "firebase/database";
+import { ref, set, onValue } from "firebase/database";
+import Table, { TableHeader, TableHeaderCell, TableBody, TableRow, TableCell } from "@/components/ui/Table";
 
 const fetcher = (url) => fetch(url).then((r) => r.json());
 
@@ -28,6 +29,9 @@ export default function Deteksi() {
   const [error, setError] = useState(null);
   const [polling, setPolling] = useState(true);
   const [lastSentHash, setLastSentHash] = useState(null);
+  const [firebaseStatus, setFirebaseStatus] = useState({ sent: false, error: null });
+  const [detectionHistory, setDetectionHistory] = useState([]);
+  const [showHistory, setShowHistory] = useState(false);
 
   // SWR untuk polling result endpoint (cara gampang)
   const { data, error: swrError } = useSWR(
@@ -94,14 +98,18 @@ export default function Deteksi() {
       set(detectionsRef, formattedDetections)
         .then(() => {
           setLastSentHash(detectionHash);
+          setFirebaseStatus({ sent: true, error: null });
           console.log("✅ Detection results sent to Firebase successfully:", {
             timestamp,
             path: `detections/${timestamp}`,
             count: formattedDetections.length
           });
+          // Reset status setelah 3 detik
+          setTimeout(() => setFirebaseStatus({ sent: false, error: null }), 3000);
         })
         .catch((err) => {
           console.error("❌ Error sending detection to Firebase:", err);
+          setFirebaseStatus({ sent: false, error: err.message });
         });
     }
   }, [result, lastSentHash]);
@@ -168,6 +176,66 @@ export default function Deteksi() {
     return () => window.removeEventListener("resize", draw);
   }, [result]);
 
+  // Load detection history from Firebase
+  useEffect(() => {
+    const detRef = ref(realtimedb, "detections/");
+
+    const unsub = onValue(detRef, (snapshot) => {
+      if (!snapshot.exists()) {
+        setDetectionHistory([]);
+        return;
+      }
+
+      const data = snapshot.val();
+      const detections = [];
+
+      // Transform data structure: detections/{timestamp}/[] (array format)
+      Object.keys(data).forEach((timestamp) => {
+        const timestampData = data[timestamp];
+        
+        if (Array.isArray(timestampData)) {
+          timestampData.forEach((detection, index) => {
+            if (detection && detection.bbox && detection.class) {
+              detections.push({
+                timestamp: parseInt(timestamp),
+                index: index,
+                bbox: detection.bbox || {},
+                class: detection.class || "unknown",
+                confidence: detection.confidence || 0,
+              });
+            }
+          });
+        } else if (timestampData && typeof timestampData === 'object') {
+          const keys = Object.keys(timestampData);
+          const isNumericKeys = keys.every(key => !isNaN(parseInt(key)));
+          
+          if (isNumericKeys) {
+            keys.sort((a, b) => parseInt(a) - parseInt(b)).forEach((index) => {
+              const detection = timestampData[index];
+              if (detection && detection.bbox && detection.class) {
+                detections.push({
+                  timestamp: parseInt(timestamp),
+                  index: parseInt(index),
+                  bbox: detection.bbox || {},
+                  class: detection.class || "unknown",
+                  confidence: detection.confidence || 0,
+                });
+              }
+            });
+          }
+        }
+      });
+
+      // Sort by timestamp descending (newest first)
+      detections.sort((a, b) => b.timestamp - a.timestamp);
+      setDetectionHistory(detections);
+    }, (error) => {
+      console.error("Error reading detection history:", error);
+    });
+
+    return () => unsub();
+  }, []);
+
   return (
     <Layout>
       <div className="p-3 md:p-6">
@@ -224,9 +292,23 @@ export default function Deteksi() {
 
           {/* Hasil Deteksi Card */}
           <Card>
-            <div className="flex items-center gap-2 mb-4">
-              <AlertCircle className="w-5 h-5 text-green-600" />
-              <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Hasil Deteksi</h2>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-green-600" />
+                <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Hasil Deteksi</h2>
+              </div>
+              {firebaseStatus.sent && (
+                <div className="flex items-center gap-2 text-green-600 text-sm">
+                  <CheckCircle className="w-4 h-4" />
+                  <span>Tersimpan ke Firebase</span>
+                </div>
+              )}
+              {firebaseStatus.error && (
+                <div className="flex items-center gap-2 text-red-600 text-sm">
+                  <XCircle className="w-4 h-4" />
+                  <span>Gagal menyimpan</span>
+                </div>
+              )}
             </div>
 
             {error && (
@@ -274,6 +356,84 @@ export default function Deteksi() {
             )}
           </Card>
         </div>
+
+        {/* Riwayat Deteksi dari Firebase */}
+        <Card className="mt-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <History className="w-5 h-5 text-purple-600" />
+              <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">
+                Riwayat Deteksi dari Firebase
+              </h2>
+            </div>
+            <Button
+              variant={showHistory ? "primary" : "outline"}
+              size="sm"
+              onClick={() => setShowHistory(!showHistory)}
+            >
+              {showHistory ? "Sembunyikan" : "Tampilkan"} ({detectionHistory.length})
+            </Button>
+          </div>
+
+          {showHistory && (
+            <>
+              {detectionHistory.length === 0 ? (
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                  Belum ada riwayat deteksi yang tersimpan
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHeaderCell>Waktu</TableHeaderCell>
+                        <TableHeaderCell>Kelas</TableHeaderCell>
+                        <TableHeaderCell>Confidence</TableHeaderCell>
+                        <TableHeaderCell>Bounding Box</TableHeaderCell>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {detectionHistory.slice(0, 20).map((detection, idx) => (
+                        <TableRow key={`${detection.timestamp}-${detection.index}-${idx}`}>
+                          <TableCell>
+                            {new Date(detection.timestamp).toLocaleString("id-ID", {
+                              day: "2-digit",
+                              month: "short",
+                              year: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                              second: "2-digit",
+                            })}
+                          </TableCell>
+                          <TableCell>
+                            <span className="font-medium text-gray-800 dark:text-gray-100">
+                              {detection.class}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-blue-600 dark:text-blue-400">
+                              {(detection.confidence * 100).toFixed(1)}%
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              x1:{detection.bbox.x1}, y1:{detection.bbox.y1}, x2:{detection.bbox.x2}, y2:{detection.bbox.y2}
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+              {detectionHistory.length > 20 && (
+                <div className="mt-4 text-sm text-gray-500 dark:text-gray-400 text-center">
+                  Menampilkan 20 dari {detectionHistory.length} hasil deteksi
+                </div>
+              )}
+            </>
+          )}
+        </Card>
       </div>
     </Layout>
   );
