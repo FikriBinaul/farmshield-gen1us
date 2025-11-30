@@ -3,16 +3,13 @@ import { useEffect, useRef, useState } from "react";
 import AdminLayout from "@/layouts/adminlayout";
 import UserLayout from "@/layouts/userlayout";
 import Cookies from "js-cookie";
-import useSWR from "swr";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import PageHeader from "@/components/ui/PageHeader";
-import { Camera, AlertCircle, CheckCircle, XCircle, History } from "lucide-react";
+import { Camera, AlertCircle, History } from "lucide-react";
 import { realtimedb } from "@/lib/firebase";
-import { ref, set, onValue } from "firebase/database";
+import { ref, onValue } from "firebase/database";
 import Table, { TableHeader, TableHeaderCell, TableBody, TableRow, TableCell } from "@/components/ui/Table";
-
-const fetcher = (url) => fetch(url).then((r) => r.json());
 
 export default function Deteksi() {
   const user = Cookies.get("user");
@@ -27,92 +24,98 @@ export default function Deteksi() {
 
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
-  const [polling, setPolling] = useState(true);
-  const [lastSentHash, setLastSentHash] = useState(null);
-  const [firebaseStatus, setFirebaseStatus] = useState({ sent: false, error: null });
   const [detectionHistory, setDetectionHistory] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [latestDetection, setLatestDetection] = useState(null);
 
-  // SWR untuk polling result endpoint (cara gampang)
-  const { data, error: swrError } = useSWR(
-    polling ? `${FASTAPI_BASE}/result` : null,
-    fetcher,
-    { refreshInterval: 400 } // polling 400ms
-  );
-
+  // Load latest detection from Firebase (real-time)
   useEffect(() => {
-    if (swrError) {
-      setError("Gagal mengambil hasil deteksi.");
-      return;
-    }
-    if (data) {
-      setResult(data);
-    }
-  }, [data, swrError]);
+    const detRef = ref(realtimedb, "detections/");
 
-  // Send detection results to Firebase Realtime Database
-  useEffect(() => {
-    if (!result || !result.boxes || result.boxes.length === 0) return;
-    
-    // Create a hash of the detection data to avoid duplicate sends
-    const detectionHash = JSON.stringify(
-      result.boxes.map(b => ({
-        xyxy: b.xyxy,
-        class: b.class_name,
-        confidence: b.confidence
-      }))
-    );
-    
-    // Only send if the detection data has changed
-    if (lastSentHash === detectionHash) return;
-
-    const timestamp = Date.now();
-    const detectionsRef = ref(realtimedb, `detections/${timestamp}`);
-
-    // Format detections according to database structure (array format)
-    const formattedDetections = [];
-    result.boxes.forEach((box) => {
-      if (box.xyxy && box.xyxy.length >= 4) {
-        const [x1, y1, x2, y2] = box.xyxy;
-        formattedDetections.push({
-          bbox: {
-            x1: Math.round(x1),
-            x2: Math.round(x2),
-            y1: Math.round(y1),
-            y2: Math.round(y2),
-          },
-          class: box.class_name || "unknown",
-          confidence: box.confidence || 0,
-        });
+    const unsub = onValue(detRef, (snapshot) => {
+      if (!snapshot.exists()) {
+        setLatestDetection(null);
+        setResult(null);
+        return;
       }
+
+      const data = snapshot.val();
+      const allDetections = [];
+
+      // Transform data structure: detections/{timestamp}/[] (array format)
+      Object.keys(data).forEach((timestamp) => {
+        const timestampData = data[timestamp];
+        
+        if (Array.isArray(timestampData)) {
+          timestampData.forEach((detection, index) => {
+            if (detection && detection.bbox && detection.class) {
+              allDetections.push({
+                timestamp: parseInt(timestamp),
+                index: index,
+                bbox: detection.bbox || {},
+                class: detection.class || "unknown",
+                confidence: detection.confidence || 0,
+              });
+            }
+          });
+        } else if (timestampData && typeof timestampData === 'object') {
+          const keys = Object.keys(timestampData);
+          const isNumericKeys = keys.every(key => !isNaN(parseInt(key)));
+          
+          if (isNumericKeys) {
+            keys.sort((a, b) => parseInt(a) - parseInt(b)).forEach((index) => {
+              const detection = timestampData[index];
+              if (detection && detection.bbox && detection.class) {
+                allDetections.push({
+                  timestamp: parseInt(timestamp),
+                  index: parseInt(index),
+                  bbox: detection.bbox || {},
+                  class: detection.class || "unknown",
+                  confidence: detection.confidence || 0,
+                });
+              }
+            });
+          }
+        }
+      });
+
+      // Sort by timestamp descending (newest first)
+      allDetections.sort((a, b) => b.timestamp - a.timestamp);
+      
+      // Set detection history
+      setDetectionHistory(allDetections);
+
+      // Get latest detection group (detections dengan timestamp yang sama)
+      if (allDetections.length > 0) {
+        const latestTimestamp = allDetections[0].timestamp;
+        const latestGroup = allDetections.filter(d => d.timestamp === latestTimestamp);
+        
+        // Convert to result format untuk kompatibilitas dengan UI yang ada
+        const formattedResult = {
+          count: latestGroup.length,
+          boxes: latestGroup.map(d => ({
+            class_name: d.class,
+            confidence: d.confidence,
+            xyxy: [d.bbox.x1, d.bbox.y1, d.bbox.x2, d.bbox.y2]
+          })),
+          frame_size: { w: 640, h: 480 }, // Default, bisa disesuaikan
+          timestamp: latestTimestamp
+        };
+        
+        setLatestDetection(latestGroup);
+        setResult(formattedResult);
+        console.log("✅ Latest detection loaded from Firebase:", formattedResult);
+      } else {
+        setLatestDetection(null);
+        setResult(null);
+      }
+    }, (error) => {
+      console.error("Error reading detection from Firebase:", error);
+      setError("Gagal membaca data dari Firebase: " + error.message);
     });
 
-    // Only send if there are detections
-    if (formattedDetections.length > 0) {
-      console.log("Sending detections to Firebase:", {
-        timestamp,
-        count: formattedDetections.length,
-        detections: formattedDetections
-      });
-      
-      set(detectionsRef, formattedDetections)
-        .then(() => {
-          setLastSentHash(detectionHash);
-          setFirebaseStatus({ sent: true, error: null });
-          console.log("✅ Detection results sent to Firebase successfully:", {
-            timestamp,
-            path: `detections/${timestamp}`,
-            count: formattedDetections.length
-          });
-          // Reset status setelah 3 detik
-          setTimeout(() => setFirebaseStatus({ sent: false, error: null }), 3000);
-        })
-        .catch((err) => {
-          console.error("❌ Error sending detection to Firebase:", err);
-          setFirebaseStatus({ sent: false, error: err.message });
-        });
-    }
-  }, [result, lastSentHash]);
+    return () => unsub();
+  }, []);
 
   // Draw overlay whenever result updates or image resizes
   useEffect(() => {
@@ -270,45 +273,17 @@ export default function Deteksi() {
             </div>
 
             <div className="mt-4 flex flex-wrap items-center gap-2">
-              <Button
-                variant={polling ? "primary" : "outline"}
-                size="sm"
-                onClick={() => setPolling(true)}
-              >
-                Mulai Polling
-              </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setPolling(false)}
-              >
-                Stop Polling
-              </Button>
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                Polling hasil dari endpoint /result
+                Streaming video dari FastAPI. Data deteksi diambil langsung dari Firebase Realtime Database.
               </p>
             </div>
           </Card>
 
           {/* Hasil Deteksi Card */}
           <Card>
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 text-green-600" />
-                <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Hasil Deteksi</h2>
-              </div>
-              {firebaseStatus.sent && (
-                <div className="flex items-center gap-2 text-green-600 text-sm">
-                  <CheckCircle className="w-4 h-4" />
-                  <span>Tersimpan ke Firebase</span>
-                </div>
-              )}
-              {firebaseStatus.error && (
-                <div className="flex items-center gap-2 text-red-600 text-sm">
-                  <XCircle className="w-4 h-4" />
-                  <span>Gagal menyimpan</span>
-                </div>
-              )}
+            <div className="flex items-center gap-2 mb-4">
+              <AlertCircle className="w-5 h-5 text-green-600" />
+              <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Hasil Deteksi (Real-time dari Firebase)</h2>
             </div>
 
             {error && (
@@ -319,38 +294,56 @@ export default function Deteksi() {
 
             {!result ? (
               <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                Menunggu hasil deteksi…
+                <div>
+                  <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                  <p>Menunggu hasil deteksi dari Firebase...</p>
+                  <p className="text-xs mt-2">Data diambil real-time dari Firebase Realtime Database</p>
+                </div>
               </div>
             ) : (
               <div>
                 <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Jumlah Terdeteksi</p>
-                  <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{result.count}</p>
+                  <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                    {result.count !== undefined ? result.count : (result.boxes?.length || 0)}
+                  </p>
                 </div>
 
-                {result.boxes && result.boxes.length > 0 ? (
+                {result.boxes && Array.isArray(result.boxes) && result.boxes.length > 0 ? (
                   <div className="space-y-3 mb-4">
                     <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Detail Deteksi:</p>
                     {result.boxes.map((b, i) => (
                       <div key={i} className="p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-700/50">
                         <div className="text-sm font-medium text-gray-800 dark:text-gray-100 mb-1">
-                          <strong>{b.class_name}</strong> — {(b.confidence*100).toFixed(1)}%
+                          <strong>{b.class_name || b.class || "Unknown"}</strong> — {((b.confidence || 0) * 100).toFixed(1)}%
                         </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">
-                          Koordinat: [{b.xyxy.join(", ")}]
-                        </div>
+                        {b.xyxy && Array.isArray(b.xyxy) && (
+                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                            Koordinat: [{b.xyxy.join(", ")}]
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
                 ) : (
                   <div className="text-center py-4 text-gray-500 dark:text-gray-400">
-                    Tidak ada objek terdeteksi.
+                    <p>Tidak ada objek terdeteksi.</p>
+                    {result && (
+                      <p className="text-xs mt-2">Data diterima tapi tidak ada boxes: {JSON.stringify(result).substring(0, 100)}...</p>
+                    )}
                   </div>
                 )}
 
                 <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg text-xs text-gray-500 dark:text-gray-400 space-y-1">
-                  <div>Frame original: {result.frame_size?.w} x {result.frame_size?.h}</div>
-                  <div>Timestamp: {new Date(result.timestamp).toLocaleString("id-ID")}</div>
+                  {result.frame_size && (
+                    <div>Frame original: {result.frame_size.w || result.frame_size.width || "N/A"} x {result.frame_size.h || result.frame_size.height || "N/A"}</div>
+                  )}
+                  {result.timestamp && (
+                    <div>Timestamp: {new Date(result.timestamp).toLocaleString("id-ID")}</div>
+                  )}
+                  {!result.timestamp && (
+                    <div>Timestamp: {new Date().toLocaleString("id-ID")} (real-time)</div>
+                  )}
                 </div>
               </div>
             )}
