@@ -3,9 +3,9 @@
 const GEMINI_API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY || "AIzaSyD_x6hQ6ldttE0-V7Iys3jPh2hiEFC356A";
 
 // Daftar model yang akan dicoba (dari yang terbaru dan pasti tersedia)
-// Model dengan suffix -latest mungkin tidak tersedia, jadi kita gunakan yang spesifik
 const GEMINI_MODELS = [
-  "gemini-1.5-flash",      // Model terbaru yang pasti tersedia
+  "gemini-2.0-flash",      // Model terbaru (2024)
+  "gemini-1.5-flash",      // Model stabil yang pasti tersedia
   "gemini-1.5-pro",        // Alternatif jika flash tidak tersedia
   "gemini-pro"              // Fallback (mungkin deprecated tapi tetap dicoba)
 ];
@@ -30,38 +30,50 @@ export async function chatWithAI(message, conversationHistory = []) {
   Jika pertanyaan tidak terkait pertanian, tetap berikan jawaban yang membantu.`;
 
   // Format conversation history untuk Gemini
+  // Format sesuai curl example: contents adalah array of objects dengan "parts" array
+  // Untuk conversation, kita bisa menggunakan format dengan role atau tanpa role
   const contents = [];
   
-  // Tambahkan system context sebagai bagian pertama
-  contents.push({
-    role: "user",
-    parts: [{ text: systemContext }]
-  });
-  contents.push({
-    role: "model",
-    parts: [{ text: "Baik, saya siap membantu Anda dengan pertanyaan tentang pertanian dan hama tanaman." }]
-  });
+  // Jika ada conversation history, gunakan format dengan role untuk multi-turn conversation
+  if (conversationHistory.length > 0) {
+    // Tambahkan system context sebagai user message pertama
+    contents.push({
+      role: "user",
+      parts: [{ text: systemContext }]
+    });
+    contents.push({
+      role: "model",
+      parts: [{ text: "Baik, saya siap membantu Anda dengan pertanyaan tentang pertanian dan hama tanaman." }]
+    });
 
-  // Tambahkan conversation history jika ada
-  conversationHistory.forEach((msg) => {
-    if (msg.sender === "user") {
-      contents.push({
-        role: "user",
-        parts: [{ text: msg.text }]
-      });
-    } else if (msg.sender === "ai") {
-      contents.push({
-        role: "model",
-        parts: [{ text: msg.text }]
-      });
-    }
-  });
+    // Tambahkan conversation history
+    conversationHistory.forEach((msg) => {
+      if (msg.sender === "user") {
+        contents.push({
+          role: "user",
+          parts: [{ text: msg.text }]
+        });
+      } else if (msg.sender === "ai") {
+        contents.push({
+          role: "model",
+          parts: [{ text: msg.text }]
+        });
+      }
+    });
 
-  // Tambahkan pesan terbaru
-  contents.push({
-    role: "user",
-    parts: [{ text: message }]
-  });
+    // Tambahkan pesan terbaru
+    contents.push({
+      role: "user",
+      parts: [{ text: message }]
+    });
+  } else {
+    // Jika tidak ada history, gunakan format sederhana (tanpa role)
+    // Gabungkan system context dengan message
+    const fullMessage = `${systemContext}\n\nPertanyaan: ${message}`;
+    contents.push({
+      parts: [{ text: fullMessage }]
+    });
+  }
 
   // Coba setiap model sampai berhasil
   let lastError = null;
@@ -72,7 +84,8 @@ export async function chatWithAI(message, conversationHistory = []) {
     const isLastModel = i === GEMINI_MODELS.length - 1;
     
     try {
-      const apiUrl = `${GEMINI_BASE_URL}/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+      // Gunakan header X-goog-api-key sesuai dokumentasi resmi
+      const apiUrl = `${GEMINI_BASE_URL}/models/${model}:generateContent`;
       
       console.log(`🔄 Mencoba model: ${model}`);
       
@@ -80,6 +93,7 @@ export async function chatWithAI(message, conversationHistory = []) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "X-goog-api-key": GEMINI_API_KEY,
         },
         body: JSON.stringify({
           contents: contents,
