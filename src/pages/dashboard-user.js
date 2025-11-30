@@ -78,10 +78,29 @@ export default function DashboardUser() {
       const detections = [];
       const flatDetections = [];
 
-      // Transform data structure: detections/{timestamp}/{index}/
+      // Transform data structure: detections/{timestamp}/[] (array format)
       Object.keys(data).forEach((timestamp) => {
         const timestampData = data[timestamp];
-        if (timestampData && typeof timestampData === 'object') {
+        // Check if it's an array
+        if (Array.isArray(timestampData)) {
+          timestampData.forEach((detection, index) => {
+            if (detection) {
+              const detectionItem = {
+                timestamp: parseInt(timestamp),
+                index: index,
+                bbox: detection.bbox || {},
+                class: detection.class || "unknown",
+                confidence: detection.confidence || 0,
+              };
+              detections.push(detectionItem);
+            }
+          });
+          flatDetections.push({
+            timestamp: parseInt(timestamp),
+            count: timestampData.length,
+          });
+        } else if (timestampData && typeof timestampData === 'object') {
+          // Fallback: handle object format if needed
           Object.keys(timestampData).forEach((index) => {
             const detection = timestampData[index];
             if (detection) {
@@ -93,11 +112,11 @@ export default function DashboardUser() {
                 confidence: detection.confidence || 0,
               };
               detections.push(detectionItem);
-              flatDetections.push({
-                timestamp: parseInt(timestamp),
-                count: Object.keys(timestampData).length,
-              });
             }
+          });
+          flatDetections.push({
+            timestamp: parseInt(timestamp),
+            count: Object.keys(timestampData).length,
           });
         }
       });

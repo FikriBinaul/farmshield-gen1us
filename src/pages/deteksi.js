@@ -65,12 +65,12 @@ export default function Deteksi() {
     const timestamp = Date.now();
     const detectionsRef = ref(realtimedb, `detections/${timestamp}`);
 
-    // Format detections according to database structure
-    const formattedDetections = {};
-    result.boxes.forEach((box, index) => {
+    // Format detections according to database structure (array format)
+    const formattedDetections = [];
+    result.boxes.forEach((box) => {
       if (box.xyxy && box.xyxy.length >= 4) {
         const [x1, y1, x2, y2] = box.xyxy;
-        formattedDetections[index] = {
+        formattedDetections.push({
           bbox: {
             x1: Math.round(x1),
             x2: Math.round(x2),
@@ -79,12 +79,12 @@ export default function Deteksi() {
           },
           class: box.class_name || "unknown",
           confidence: box.confidence || 0,
-        };
+        });
       }
     });
 
     // Only send if there are detections
-    if (Object.keys(formattedDetections).length > 0) {
+    if (formattedDetections.length > 0) {
       set(detectionsRef, formattedDetections)
         .then(() => {
           setLastSentHash(detectionHash);
