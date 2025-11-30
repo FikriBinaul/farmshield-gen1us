@@ -20,7 +20,7 @@ export default function Deteksi() {
   const Layout = parsed.role === "admin" ? AdminLayout : UserLayout;
 
   // Ganti dengan URL FastAPI publik kamu (ngrok / domain)
-  const FASTAPI_BASE = "https://muriatic-unbeneficially-meri.ngrok-free.dev";
+  const FASTAPI_BASE = "https://dizygotic-ungruff-luke.ngrok-free.dev";
 
   const imgRef = useRef(null);
   const canvasRef = useRef(null);

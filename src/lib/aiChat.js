@@ -2,16 +2,15 @@
 // API Key dari environment variable (lebih aman)
 const GEMINI_API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY || "AIzaSyD_x6hQ6ldttE0-V7Iys3jPh2hiEFC356A";
 
-// Daftar model yang akan dicoba (dari yang terbaru)
+// Daftar model yang akan dicoba (dari yang terbaru dan pasti tersedia)
+// Model dengan suffix -latest mungkin tidak tersedia, jadi kita gunakan yang spesifik
 const GEMINI_MODELS = [
-  "gemini-1.5-flash-latest",
-  "gemini-1.5-pro-latest", 
-  "gemini-1.5-flash",
-  "gemini-1.5-pro",
-  "gemini-pro"
+  "gemini-1.5-flash",      // Model terbaru yang pasti tersedia
+  "gemini-1.5-pro",        // Alternatif jika flash tidak tersedia
+  "gemini-pro"              // Fallback (mungkin deprecated tapi tetap dicoba)
 ];
 
-// Base URL untuk Gemini API
+// Base URL untuk Gemini API - gunakan v1beta untuk model terbaru
 const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta";
 
 /**
@@ -66,10 +65,16 @@ export async function chatWithAI(message, conversationHistory = []) {
 
   // Coba setiap model sampai berhasil
   let lastError = null;
+  let lastErrorDetails = null;
   
-  for (const model of GEMINI_MODELS) {
+  for (let i = 0; i < GEMINI_MODELS.length; i++) {
+    const model = GEMINI_MODELS[i];
+    const isLastModel = i === GEMINI_MODELS.length - 1;
+    
     try {
       const apiUrl = `${GEMINI_BASE_URL}/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+      
+      console.log(`🔄 Mencoba model: ${model}`);
       
       const response = await fetch(apiUrl, {
         method: "POST",
@@ -87,49 +92,75 @@ export async function chatWithAI(message, conversationHistory = []) {
         }),
       });
 
+      const responseData = await response.json().catch(() => ({}));
+
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        lastError = new Error(errorData.error?.message || `API error: ${response.status}`);
+        const errorMessage = responseData.error?.message || `API error: ${response.status}`;
+        lastError = new Error(errorMessage);
+        lastErrorDetails = responseData.error;
         
-        // Jika model tidak ditemukan, coba model berikutnya
-        if (response.status === 404 || errorData.error?.message?.includes("not found")) {
-          console.warn(`Model ${model} tidak tersedia, mencoba model berikutnya...`);
-          continue;
+        // Jika model tidak ditemukan (404) atau "not found", coba model berikutnya
+        if (response.status === 404 || errorMessage.toLowerCase().includes("not found") || errorMessage.toLowerCase().includes("is not supported")) {
+          console.warn(`⚠️ Model ${model} tidak tersedia: ${errorMessage}`);
+          if (!isLastModel) {
+            console.log(`➡️ Mencoba model berikutnya...`);
+            continue;
+          }
         }
         
-        throw lastError;
-      }
-
-      const data = await response.json();
-      
-      // Extract response text dari Gemini
-      if (data.candidates && data.candidates[0] && data.candidates[0].content) {
-        console.log(`✅ Berhasil menggunakan model: ${model}`);
-        return data.candidates[0].content.parts[0].text;
-      }
-
-      throw new Error("No response from AI");
-    } catch (error) {
-      // Jika ini bukan error 404 atau "not found", throw langsung
-      if (!error.message?.includes("not found") && error.message !== lastError?.message) {
-        console.error(`Error dengan model ${model}:`, error);
-        lastError = error;
-        
-        // Jika ini model terakhir, throw error
-        if (model === GEMINI_MODELS[GEMINI_MODELS.length - 1]) {
-          throw error;
+        // Jika error lain dan ini model terakhir, throw
+        if (isLastModel) {
+          throw lastError;
         }
         continue;
       }
+
+      // Extract response text dari Gemini
+      if (responseData.candidates && responseData.candidates[0] && responseData.candidates[0].content) {
+        const responseText = responseData.candidates[0].content.parts[0].text;
+        console.log(`✅ Berhasil menggunakan model: ${model}`);
+        return responseText;
+      }
+
+      // Jika tidak ada response text
+      if (isLastModel) {
+        throw new Error("No response from AI - response structure tidak valid");
+      }
+      continue;
+      
+    } catch (error) {
+      // Jika error network atau error lain
+      const errorMessage = error.message || String(error);
+      
+      // Jika error "not found" dan bukan model terakhir, lanjut ke model berikutnya
+      if ((errorMessage.toLowerCase().includes("not found") || 
+           errorMessage.toLowerCase().includes("is not supported")) && 
+          !isLastModel) {
+        console.warn(`⚠️ Model ${model} error: ${errorMessage}`);
+        console.log(`➡️ Mencoba model berikutnya...`);
+        lastError = error;
+        continue;
+      }
+      
+      // Jika ini model terakhir atau error fatal, throw
+      if (isLastModel) {
+        console.error(`❌ Semua model gagal. Error terakhir:`, error);
+        throw error;
+      }
       
       lastError = error;
-      // Lanjut ke model berikutnya
       continue;
     }
   }
 
-  // Jika semua model gagal
-  throw lastError || new Error("Semua model Gemini gagal. Pastikan API key valid dan billing sudah diaktifkan.");
+  // Jika semua model gagal (seharusnya tidak sampai sini karena sudah throw di loop)
+  const finalError = lastError || new Error("Semua model Gemini gagal. Pastikan API key valid dan billing sudah diaktifkan di Google Cloud Console.");
+  
+  if (lastErrorDetails) {
+    console.error("Error details:", lastErrorDetails);
+  }
+  
+  throw finalError;
 }
 
 /**
