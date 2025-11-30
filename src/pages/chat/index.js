@@ -137,13 +137,37 @@ export default function ChatList() {
   const Layout = currentUser.role === "admin" ? AdminLayout : UserLayout;
 
   // ============================================================
+  // BUKA CHAT DENGAN AI
+  // ============================================================
+  const openAIChat = () => {
+    router.push("/chat/ai-assistant");
+  };
+
+  // ============================================================
   // UI
   // ============================================================
   return (
     <Layout>
       <div className="p-6">
-        <h1 className="text-2xl font-bold mb-6">Daftar User untuk Chat</h1>
+        <h1 className="text-2xl font-bold mb-6">Daftar Chat</h1>
 
+        {/* Chat dengan AI */}
+        <div
+          onClick={openAIChat}
+          className="p-4 border-2 border-blue-500 rounded-lg shadow-lg bg-gradient-to-r from-blue-50 to-indigo-50 cursor-pointer hover:from-blue-100 hover:to-indigo-100 transition mb-6"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center">
+              <span className="text-white text-xl font-bold">AI</span>
+            </div>
+            <div>
+              <p className="font-semibold text-lg text-blue-800">Chat dengan AI Assistant</p>
+              <p className="text-sm text-blue-600">Dapatkan bantuan tentang pertanian dan hama tanaman</p>
+            </div>
+          </div>
+        </div>
+
+        <h2 className="text-xl font-semibold mb-4 mt-8">Chat dengan User Lain</h2>
         <div className="grid gap-4">
           {users
             .filter((u) => u.email !== currentUser.email)
