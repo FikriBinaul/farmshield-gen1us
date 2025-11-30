@@ -1,14 +1,9 @@
 import { useState, useEffect } from "react";
 import Cookies from "js-cookie";
 import { useRouter } from "next/router";
-import { db } from "@/lib/firebase";
+import { realtimedb } from "@/lib/firebase";
 import AdminLayout from "@/layouts/adminlayout";
-import {
-  collection,
-  onSnapshot,
-  query,
-  orderBy,
-} from "firebase/firestore";
+import { ref, onValue } from "firebase/database";
 import {
   LineChart,
   Line,
@@ -43,6 +38,7 @@ export default function Dashboard() {
   // GRAPH
   const [chartData, setChartData] = useState([]);
   const [filter, setFilter] = useState("week");
+  const [detectionList, setDetectionList] = useState([]);
 
   // LOADING
   const [loading, setLoading] = useState(true);
@@ -77,35 +73,63 @@ export default function Dashboard() {
   // REALTIME DETECTION LISTENER
   // =====================================
   useEffect(() => {
-    const q = query(collection(db, "detections"), orderBy("timestamp", "asc"));
+    const detRef = ref(realtimedb, "detections/");
 
-    const unsub = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map((d) => d.data());
+    const unsub = onValue(detRef, (snapshot) => {
+      if (!snapshot.exists()) {
+        setDetectionList([]);
+        setStats({ total: 0, today: 0, accuracy: 0 });
+        setChartData([]);
+        return;
+      }
 
-      // total
-      const total = data.length;
+      const data = snapshot.val();
+      const detections = [];
 
-      // today
-      const today = data.filter((d) => {
-        const t = d.timestamp.toDate();
-        return (
-          t.toDateString() === new Date().toDateString()
-        );
+      // Transform data structure: detections/{timestamp}/{index}/
+      Object.keys(data).forEach((timestamp) => {
+        const timestampData = data[timestamp];
+        if (timestampData && typeof timestampData === 'object') {
+          Object.keys(timestampData).forEach((index) => {
+            const detection = timestampData[index];
+            if (detection) {
+              detections.push({
+                timestamp: parseInt(timestamp),
+                index: parseInt(index),
+                bbox: detection.bbox || {},
+                class: detection.class || "unknown",
+                confidence: detection.confidence || 0,
+              });
+            }
+          });
+        }
+      });
+
+      // Sort by timestamp descending (newest first)
+      detections.sort((a, b) => b.timestamp - a.timestamp);
+      setDetectionList(detections);
+
+      // Calculate stats
+      const total = detections.length;
+
+      const today = detections.filter((d) => {
+        const today = new Date();
+        const start = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+        return d.timestamp >= start;
       }).length;
 
-      // accuracy
-      const accuracy =
-        data.length > 0
-          ? (
-              (data.filter((d) => d.result === "kutu_putih").length /
-                data.length) *
-              100
-            ).toFixed(1)
-          : 0;
+      // Calculate accuracy based on whitefly detections
+      const whiteflyCount = detections.filter((d) => 
+        d.class.toLowerCase().includes("whitefly") || 
+        d.class.toLowerCase().includes("kutu") ||
+        d.class.toLowerCase().includes("putih")
+      ).length;
 
-      setStats({ total, today, accuracy });
+      const accuracy = total > 0 ? ((whiteflyCount / total) * 100).toFixed(1) : 0;
 
-      generateChart(data);
+      setStats({ total, today, accuracy: parseFloat(accuracy) });
+
+      generateChart(detections);
     });
 
     return () => unsub();
@@ -118,14 +142,14 @@ export default function Dashboard() {
     const grouped = {};
 
     data.forEach((d) => {
-      const date = d.timestamp.toDate();
+      const date = new Date(d.timestamp);
 
       let key;
 
       if (filter === "day") {
-        key = date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+        key = date.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
       } else if (filter === "week") {
-        key = date.toLocaleDateString();
+        key = date.toLocaleDateString("id-ID", { day: "2-digit", month: "short" });
       } else {
         key = `${date.getMonth() + 1}/${date.getFullYear()}`;
       }
@@ -134,10 +158,18 @@ export default function Dashboard() {
       grouped[key]++;
     });
 
-    const chartArr = Object.entries(grouped).map(([k, v]) => ({
-      label: k,
-      value: v,
-    }));
+    const chartArr = Object.entries(grouped)
+      .map(([k, v]) => ({
+        label: k,
+        value: v,
+      }))
+      .sort((a, b) => {
+        // Sort by date for better visualization
+        if (filter === "day" || filter === "week") {
+          return new Date(a.label) - new Date(b.label);
+        }
+        return a.label.localeCompare(b.label);
+      });
 
     setChartData(chartArr);
   };
@@ -235,6 +267,66 @@ export default function Dashboard() {
               <Line type="monotone" dataKey="value" stroke="#2563EB" strokeWidth={3} />
             </LineChart>
           </ResponsiveContainer>
+        </Card>
+
+        {/* DETECTION LIST TABLE */}
+        <Card className="mb-8">
+          <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-100">
+            Daftar Hasil Deteksi
+          </h3>
+          {detectionList.length === 0 ? (
+            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+              Belum ada hasil deteksi
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHeaderCell>Waktu</TableHeaderCell>
+                    <TableHeaderCell>Kelas</TableHeaderCell>
+                    <TableHeaderCell>Confidence</TableHeaderCell>
+                    <TableHeaderCell>Bounding Box</TableHeaderCell>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {detectionList.slice(0, 50).map((detection, idx) => (
+                    <TableRow key={`${detection.timestamp}-${detection.index}-${idx}`}>
+                      <TableCell>
+                        {new Date(detection.timestamp).toLocaleString("id-ID", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </TableCell>
+                      <TableCell>
+                        <span className="font-medium text-gray-800 dark:text-gray-100">
+                          {detection.class}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-blue-600 dark:text-blue-400">
+                          {(detection.confidence * 100).toFixed(1)}%
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          x1:{detection.bbox.x1}, y1:{detection.bbox.y1}, x2:{detection.bbox.x2}, y2:{detection.bbox.y2}
+                        </span>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+          {detectionList.length > 50 && (
+            <div className="mt-4 text-sm text-gray-500 dark:text-gray-400 text-center">
+              Menampilkan 50 dari {detectionList.length} hasil deteksi
+            </div>
+          )}
         </Card>
 
       </div>

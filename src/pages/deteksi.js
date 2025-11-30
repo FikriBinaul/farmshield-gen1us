@@ -8,6 +8,8 @@ import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import PageHeader from "@/components/ui/PageHeader";
 import { Camera, AlertCircle } from "lucide-react";
+import { realtimedb } from "@/lib/firebase";
+import { ref, set } from "firebase/database";
 
 const fetcher = (url) => fetch(url).then((r) => r.json());
 
@@ -25,6 +27,7 @@ export default function Deteksi() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [polling, setPolling] = useState(true);
+  const [lastSentHash, setLastSentHash] = useState(null);
 
   // SWR untuk polling result endpoint (cara gampang)
   const { data, error: swrError } = useSWR(
@@ -42,6 +45,56 @@ export default function Deteksi() {
       setResult(data);
     }
   }, [data, swrError]);
+
+  // Send detection results to Firebase Realtime Database
+  useEffect(() => {
+    if (!result || !result.boxes || result.boxes.length === 0) return;
+    
+    // Create a hash of the detection data to avoid duplicate sends
+    const detectionHash = JSON.stringify(
+      result.boxes.map(b => ({
+        xyxy: b.xyxy,
+        class: b.class_name,
+        confidence: b.confidence
+      }))
+    );
+    
+    // Only send if the detection data has changed
+    if (lastSentHash === detectionHash) return;
+
+    const timestamp = Date.now();
+    const detectionsRef = ref(realtimedb, `detections/${timestamp}`);
+
+    // Format detections according to database structure
+    const formattedDetections = {};
+    result.boxes.forEach((box, index) => {
+      if (box.xyxy && box.xyxy.length >= 4) {
+        const [x1, y1, x2, y2] = box.xyxy;
+        formattedDetections[index] = {
+          bbox: {
+            x1: Math.round(x1),
+            x2: Math.round(x2),
+            y1: Math.round(y1),
+            y2: Math.round(y2),
+          },
+          class: box.class_name || "unknown",
+          confidence: box.confidence || 0,
+        };
+      }
+    });
+
+    // Only send if there are detections
+    if (Object.keys(formattedDetections).length > 0) {
+      set(detectionsRef, formattedDetections)
+        .then(() => {
+          setLastSentHash(detectionHash);
+          console.log("Detection results sent to Firebase");
+        })
+        .catch((err) => {
+          console.error("Error sending detection to Firebase:", err);
+        });
+    }
+  }, [result, lastSentHash]);
 
   // Draw overlay whenever result updates or image resizes
   useEffect(() => {
