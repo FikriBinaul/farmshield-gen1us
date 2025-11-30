@@ -77,6 +77,7 @@ export default function Dashboard() {
 
     const unsub = onValue(detRef, (snapshot) => {
       if (!snapshot.exists()) {
+        console.log("No detections found in Firebase (admin)");
         setDetectionList([]);
         setStats({ total: 0, today: 0, accuracy: 0 });
         setChartData([]);
@@ -84,15 +85,18 @@ export default function Dashboard() {
       }
 
       const data = snapshot.val();
+      console.log("Firebase data received (admin):", data);
       const detections = [];
 
       // Transform data structure: detections/{timestamp}/[] (array format)
+      // Note: Firebase Realtime DB may convert arrays to objects with numeric keys
       Object.keys(data).forEach((timestamp) => {
         const timestampData = data[timestamp];
+        
         // Check if it's an array
         if (Array.isArray(timestampData)) {
           timestampData.forEach((detection, index) => {
-            if (detection) {
+            if (detection && detection.bbox && detection.class) {
               detections.push({
                 timestamp: parseInt(timestamp),
                 index: index,
@@ -103,24 +107,46 @@ export default function Dashboard() {
             }
           });
         } else if (timestampData && typeof timestampData === 'object') {
-          // Fallback: handle object format if needed
-          Object.keys(timestampData).forEach((index) => {
-            const detection = timestampData[index];
-            if (detection) {
-              detections.push({
-                timestamp: parseInt(timestamp),
-                index: parseInt(index),
-                bbox: detection.bbox || {},
-                class: detection.class || "unknown",
-                confidence: detection.confidence || 0,
-              });
-            }
-          });
+          // Handle object format (Firebase may convert arrays to objects)
+          // Check if keys are numeric (indicating it was an array)
+          const keys = Object.keys(timestampData);
+          const isNumericKeys = keys.every(key => !isNaN(parseInt(key)));
+          
+          if (isNumericKeys) {
+            // It's an array that was converted to object
+            keys.sort((a, b) => parseInt(a) - parseInt(b)).forEach((index) => {
+              const detection = timestampData[index];
+              if (detection && detection.bbox && detection.class) {
+                detections.push({
+                  timestamp: parseInt(timestamp),
+                  index: parseInt(index),
+                  bbox: detection.bbox || {},
+                  class: detection.class || "unknown",
+                  confidence: detection.confidence || 0,
+                });
+              }
+            });
+          } else {
+            // It's a regular object (old format)
+            keys.forEach((index) => {
+              const detection = timestampData[index];
+              if (detection && detection.bbox && detection.class) {
+                detections.push({
+                  timestamp: parseInt(timestamp),
+                  index: parseInt(index),
+                  bbox: detection.bbox || {},
+                  class: detection.class || "unknown",
+                  confidence: detection.confidence || 0,
+                });
+              }
+            });
+          }
         }
       });
 
       // Sort by timestamp descending (newest first)
       detections.sort((a, b) => b.timestamp - a.timestamp);
+      console.log(`Processed ${detections.length} detections (admin)`);
       setDetectionList(detections);
 
       // Calculate stats
@@ -148,6 +174,11 @@ export default function Dashboard() {
 
     return () => unsub();
   }, [filter]);
+
+  // Debug: log detection list changes
+  useEffect(() => {
+    console.log("Detection list updated (admin):", detectionList.length, "items");
+  }, [detectionList]);
 
   // =====================================
   // CHART DATA GENERATOR

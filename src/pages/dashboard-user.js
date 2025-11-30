@@ -4,10 +4,10 @@ import Cookies from "js-cookie";
 import { useRouter } from "next/router";
 import { Activity, Calendar, TrendingUp } from "lucide-react";
 
-import { db } from "@/lib/firebase";
+import { db, realtimedb } from "@/lib/firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
 
-import { getDatabase, ref, onValue } from "firebase/database";
+import { ref, onValue } from "firebase/database";
 import Table, { TableHeader, TableHeaderCell, TableBody, TableRow, TableCell } from "@/components/ui/Table";
 
 import {
@@ -36,8 +36,6 @@ export default function DashboardUser() {
   const [filterRange, setFilterRange] = useState("today");
   const [detectionList, setDetectionList] = useState([]);
 
-  const realtimeDB = getDatabase();
-
   useEffect(() => {
     const cookieUser = Cookies.get("user");
     if (!cookieUser) return router.push("/login");
@@ -65,26 +63,31 @@ export default function DashboardUser() {
   };
 
   const listenDetections = () => {
-    const detRef = ref(realtimeDB, "detections/");
+    const detRef = ref(realtimedb, "detections/");
 
     onValue(detRef, (snapshot) => {
       if (!snapshot.exists()) {
+        console.log("No detections found in Firebase");
         setRawDetections([]);
         setDetectionList([]);
         return;
       }
 
       const data = snapshot.val();
+      console.log("Firebase data received:", data);
       const detections = [];
       const flatDetections = [];
 
       // Transform data structure: detections/{timestamp}/[] (array format)
+      // Note: Firebase Realtime DB may convert arrays to objects with numeric keys
       Object.keys(data).forEach((timestamp) => {
         const timestampData = data[timestamp];
+        console.log(`Processing timestamp ${timestamp}:`, timestampData, Array.isArray(timestampData));
+        
         // Check if it's an array
         if (Array.isArray(timestampData)) {
           timestampData.forEach((detection, index) => {
-            if (detection) {
+            if (detection && detection.bbox && detection.class) {
               const detectionItem = {
                 timestamp: parseInt(timestamp),
                 index: index,
@@ -100,31 +103,62 @@ export default function DashboardUser() {
             count: timestampData.length,
           });
         } else if (timestampData && typeof timestampData === 'object') {
-          // Fallback: handle object format if needed
-          Object.keys(timestampData).forEach((index) => {
-            const detection = timestampData[index];
-            if (detection) {
-              const detectionItem = {
-                timestamp: parseInt(timestamp),
-                index: parseInt(index),
-                bbox: detection.bbox || {},
-                class: detection.class || "unknown",
-                confidence: detection.confidence || 0,
-              };
-              detections.push(detectionItem);
-            }
-          });
-          flatDetections.push({
-            timestamp: parseInt(timestamp),
-            count: Object.keys(timestampData).length,
-          });
+          // Handle object format (Firebase may convert arrays to objects)
+          // Check if keys are numeric (indicating it was an array)
+          const keys = Object.keys(timestampData);
+          const isNumericKeys = keys.every(key => !isNaN(parseInt(key)));
+          
+          if (isNumericKeys) {
+            // It's an array that was converted to object
+            keys.sort((a, b) => parseInt(a) - parseInt(b)).forEach((index) => {
+              const detection = timestampData[index];
+              if (detection && detection.bbox && detection.class) {
+                const detectionItem = {
+                  timestamp: parseInt(timestamp),
+                  index: parseInt(index),
+                  bbox: detection.bbox || {},
+                  class: detection.class || "unknown",
+                  confidence: detection.confidence || 0,
+                };
+                detections.push(detectionItem);
+              }
+            });
+            flatDetections.push({
+              timestamp: parseInt(timestamp),
+              count: keys.length,
+            });
+          } else {
+            // It's a regular object (old format)
+            keys.forEach((index) => {
+              const detection = timestampData[index];
+              if (detection && detection.bbox && detection.class) {
+                const detectionItem = {
+                  timestamp: parseInt(timestamp),
+                  index: parseInt(index),
+                  bbox: detection.bbox || {},
+                  class: detection.class || "unknown",
+                  confidence: detection.confidence || 0,
+                };
+                detections.push(detectionItem);
+              }
+            });
+            flatDetections.push({
+              timestamp: parseInt(timestamp),
+              count: keys.length,
+            });
+          }
         }
       });
+
+      console.log(`Processed ${detections.length} detections`);
+      console.log("Detections:", detections);
 
       // Sort by timestamp descending (newest first)
       detections.sort((a, b) => b.timestamp - a.timestamp);
       setDetectionList(detections);
       setRawDetections(flatDetections);
+    }, (error) => {
+      console.error("Error reading from Firebase:", error);
     });
   };
 

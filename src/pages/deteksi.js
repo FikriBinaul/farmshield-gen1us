@@ -85,13 +85,23 @@ export default function Deteksi() {
 
     // Only send if there are detections
     if (formattedDetections.length > 0) {
+      console.log("Sending detections to Firebase:", {
+        timestamp,
+        count: formattedDetections.length,
+        detections: formattedDetections
+      });
+      
       set(detectionsRef, formattedDetections)
         .then(() => {
           setLastSentHash(detectionHash);
-          console.log("Detection results sent to Firebase");
+          console.log("✅ Detection results sent to Firebase successfully:", {
+            timestamp,
+            path: `detections/${timestamp}`,
+            count: formattedDetections.length
+          });
         })
         .catch((err) => {
-          console.error("Error sending detection to Firebase:", err);
+          console.error("❌ Error sending detection to Firebase:", err);
         });
     }
   }, [result, lastSentHash]);
