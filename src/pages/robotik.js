@@ -25,6 +25,7 @@ const ROBOT_IMAGES = [
 
 export default function Robotik() {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [isSkemaOpen, setIsSkemaOpen] = useState(false);
 
   const nextSlide = () => {
     setCurrentSlide((prev) => (prev + 1) % ROBOT_IMAGES.length);
@@ -69,16 +70,23 @@ export default function Robotik() {
               Skema rangkaian elektronik robot pendeteksi kutu putih, berisi
               koneksi sensor, mikrokontroler, dan aktuator.
             </p>
-            <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-gray-100 border">
+            <button
+              type="button"
+              onClick={() => setIsSkemaOpen(true)}
+              className="relative w-full aspect-video rounded-lg overflow-hidden bg-gray-100 border focus:outline-none focus:ring-2 focus:ring-green-700 focus:ring-offset-2 group"
+            >
               <Image
                 src="/gamtek/skema/skema.jpeg"
                 alt="Skema rangkaian robot pendeteksi kutu putih"
                 fill
-                className="object-contain"
+                className="object-contain transition-transform duration-300 group-hover:scale-105"
                 sizes="(max-width: 768px) 100vw, 33vw"
                 priority
               />
-            </div>
+              <span className="absolute bottom-3 right-3 px-3 py-1 text-xs font-semibold bg-black/60 text-white rounded-full">
+                Klik untuk perbesar
+              </span>
+            </button>
           </div>
 
           {/* Model 3D */}
@@ -250,6 +258,40 @@ export default function Robotik() {
           </div>
         </section>
       </main>
+
+      {isSkemaOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setIsSkemaOpen(false)}
+        >
+          <div
+            className="relative w-full max-w-4xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setIsSkemaOpen(false)}
+              className="absolute -top-4 -right-4 bg-white text-gray-800 rounded-full w-10 h-10 shadow-lg font-semibold"
+              aria-label="Tutup pratinjau skema"
+            >
+              &times;
+            </button>
+            <div className="relative w-full h-[70vh] bg-white rounded-2xl overflow-hidden border-4 border-white shadow-2xl">
+              <Image
+                src="/gamtek/skema/skema.jpeg"
+                alt="Skema rangkaian robot pendeteksi kutu putih versi besar"
+                fill
+                className="object-contain"
+                sizes="(max-width: 1024px) 100vw, 60vw"
+                priority
+              />
+            </div>
+            <p className="text-center text-white mt-4 text-sm">
+              Skema rangkaian lengkap robot penyemprot pestisida pendeteksi kutu putih
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
