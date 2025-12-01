@@ -9,30 +9,34 @@ const TEAM_MEMBERS = [
   {
     name: "Fikri Binaul Umah",
     nim: "J0404231038",
-    role: "Lead Hardware & Vision System",
+    role: "Lead Architect & Backend Engineer",
+    photo: "/aboutus/Fikri.jpeg",
     quote:
-      "Memastikan robot FarmShield membaca gejala kutu putih secara akurat di lapangan.",
+      "Membangun fondasi sistem FarmShield dan memastikan seluruh proses backend berjalan cepat, stabil, dan dapat diandalkan di lapangan.",
   },
   {
     name: "Luthfi Alviani",
     nim: "J0404231023",
-    role: "Control & Navigation Engineer",
+    role: "UI/UX & Frontend Developer",
+    photo: "/aboutus/luthfi.jpeg",
     quote:
-      "Menjaga pergerakan robot dan semprotan pestisida tetap presisi serta aman.",
+      "Menghadirkan antarmuka FarmShield yang intuitif supaya petani bisa memantau kondisi tanaman dengan mudah dan efisien.",
   },
   {
     name: "Muhammad Rifki Munawar",
     nim: "J0404231072",
-    role: "AI & Data Specialist",
+    role: "Robotics Engineer",
+    photo: "/aboutus/Rifki.png",
     quote:
-      "Melatih model deteksi hama supaya FarmShield tanggap terhadap serangan kutu putih.",
+      "Merancang dan mengoptimalkan sistem mekanik serta pergerakan robot FarmShield agar mampu beroperasi stabil di berbagai kondisi lahan.",
   },
   {
     name: "Alicia Maharani",
     nim: "J0404231090",
-    role: "Product & Experience Designer",
+    role: "Machine Learning Specialist",
+    photo: "/aboutus/alicia.jpeg",
     quote:
-      "Merancang pengalaman pengguna yang ramah bagi petani dan operator lapangan.",
+      "Mengolah dan melatih model prediksi FarmShield agar mampu mengenali gejala kutu putih dengan akurasi tinggi di situasi nyata.",
   },
 ];
 
@@ -132,8 +136,7 @@ export default function AboutUs() {
                 Pilih Karakter Tim
               </h2>
               <p className="text-sm md:text-base text-white/70 mt-2">
-                Geser untuk melihat peran setiap anggota. Semua kartu memakai
-                foto Fikri sementara hingga sesi foto resmi selesai.
+                Geser untuk melihat peran setiap anggota.
               </p>
             </div>
             <div className="flex gap-3">
@@ -192,7 +195,7 @@ export default function AboutUs() {
                     <div className="bg-gray-950 rounded-[26px] p-5 space-y-5 hover:-translate-y-1 hover:shadow-[0_40px_80px_rgba(0,0,0,0.45)] transition-transform duration-300">
                       <div className="relative h-56 rounded-2xl overflow-hidden border border-white/10">
                         <Image
-                          src="/aboutus/Fikri.jpeg"
+                          src={member.photo}
                           alt={`Foto ${member.name}`}
                           fill
                           className="object-cover transition-transform duration-500 group-hover:scale-105"
