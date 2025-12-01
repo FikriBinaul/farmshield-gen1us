@@ -160,7 +160,7 @@ export default function MesinLearning() {
             <div className="bg-gray-50 p-4 rounded-lg">
               <h3 className="font-semibold text-green-800 mb-2">Keunggulan Model</h3>
               <ul className="text-gray-700 space-y-1 text-sm">
-                <li>• Akurasi deteksi tinggi (>90%)</li>
+                <li>• Akurasi deteksi tinggi</li>
                 <li>• Deteksi real-time tanpa delay signifikan</li>
                 <li>• Dapat mendeteksi multiple objects sekaligus</li>
                 <li>• Robust terhadap variasi kondisi pencahayaan</li>
