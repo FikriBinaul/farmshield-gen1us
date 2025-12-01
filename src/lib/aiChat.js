@@ -1,6 +1,6 @@
 // Helper function untuk chat dengan Google Gemini AI
 // API Key dari environment variable (lebih aman)
-const GEMINI_API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY || "AIzaSyD_x6hQ6ldttE0-V7Iys3jPh2hiEFC356A";
+const GEMINI_API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
 
 // Daftar model yang akan dicoba (dari yang terbaru dan pasti tersedia)
 const GEMINI_MODELS = [
