@@ -11,6 +11,14 @@ export default function MesinLearning() {
   const epochFiles = [
     { name: "25 Epoch", path: "/mesin/25epoch.png" },
     { name: "50 Epoch", path: "/mesin/50epoch.png" },
+    { name: "100 Epoch", path: "/mesin/100epoch.png" },
+  ];
+
+  // File confusion matrix
+  const matrixFiles = [
+    { name: "25 Epoch", path: "/mesin/matrix/25epoch.png" },
+    { name: "50 Epoch", path: "/mesin/matrix/50epoch.png" },
+    { name: "100 Epoch", path: "/mesin/matrix/100epoch.png" },
   ];
 
   // File hasil deteksi
@@ -62,9 +70,9 @@ export default function MesinLearning() {
         <div className="mb-12">
           <h2 className="text-3xl font-bold text-green-800 mb-6 flex items-center gap-3">
             <TrendingUp size={32} />
-            Perbandingan Training: 25 Epoch vs 50 Epoch
+            Perbandingan Training: 25, 50, dan 100 Epoch
           </h2>
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid md:grid-cols-3 gap-6">
             {epochFiles.map((file, index) => (
               <div
                 key={index}
@@ -92,6 +100,44 @@ export default function MesinLearning() {
             <p className="text-sm text-blue-800">
               <strong>Catatan:</strong> Perbandingan ini menunjukkan perkembangan model selama proses training. 
               Epoch yang lebih tinggi umumnya menghasilkan akurasi yang lebih baik, namun memerlukan waktu training yang lebih lama.
+            </p>
+          </div>
+        </div>
+
+        {/* Confusion Matrix */}
+        <div className="mb-12">
+          <h2 className="text-3xl font-bold text-green-800 mb-6 flex items-center gap-3">
+            <Target size={32} />
+            Confusion Matrix: 25, 50, dan 100 Epoch
+          </h2>
+          <div className="grid md:grid-cols-3 gap-6">
+            {matrixFiles.map((file, index) => (
+              <div
+                key={index}
+                className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition cursor-pointer"
+                onClick={() => setZoomImage(file.path)}
+              >
+                <div className="bg-gradient-to-r from-orange-600 to-orange-700 p-4 text-white">
+                  <h3 className="text-xl font-bold">Confusion Matrix {file.name}</h3>
+                  <p className="text-orange-100 text-sm mt-1">Evaluasi Performa Model</p>
+                </div>
+                <div className="relative aspect-square bg-gray-100">
+                  <img
+                    src={file.path}
+                    alt={`Confusion Matrix ${file.name}`}
+                    className="w-full h-full object-contain p-4"
+                  />
+                  <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition-colors flex items-center justify-center">
+                    <ZoomIn className="text-white opacity-0 hover:opacity-100 transition-opacity" size={32} />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 bg-orange-50 border border-orange-200 rounded-lg p-4">
+            <p className="text-sm text-orange-800">
+              <strong>Penjelasan:</strong> Confusion matrix menunjukkan performa model dalam mengklasifikasikan data. 
+              Matrix ini membantu memahami tingkat akurasi, precision, recall, dan F1-score model pada setiap epoch training.
             </p>
           </div>
         </div>
