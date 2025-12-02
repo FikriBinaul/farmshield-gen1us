@@ -18,7 +18,7 @@ const TEAM_MEMBERS = [
     name: "Luthfi Alviani",
     nim: "J0404231023",
     role: "UI/UX & Frontend Developer",
-    photo: "/aboutus/luthfi.jpeg",
+    photo: "/aboutus/luthfi.png",
     quote:
       "Menghadirkan antarmuka FarmShield yang intuitif supaya petani bisa memantau kondisi tanaman dengan mudah dan efisien.",
   },
@@ -34,7 +34,7 @@ const TEAM_MEMBERS = [
     name: "Alicia Maharani",
     nim: "J0404231090",
     role: "Machine Learning Specialist",
-    photo: "/aboutus/alicia.jpeg",
+    photo: "/aboutus/alicia.png",
     quote:
       "Mengolah dan melatih model prediksi FarmShield agar mampu mengenali gejala kutu putih dengan akurasi tinggi di situasi nyata.",
   },
